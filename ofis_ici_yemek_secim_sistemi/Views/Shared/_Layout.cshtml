@@ -1,0 +1,668 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Ofis Yemek Seçim Sistemi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
+ 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --primary-color: #3b82f6;
+            --bg-light: #f8fafc;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-light);
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #ffffff;
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.03), inset 0 1px 2px rgba(255,255,255,0.9);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+            .sidebar-logo::before {
+                content: '';
+                position: absolute;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                border: 1.5px solid #e2e8f0;
+            }
+
+            .sidebar-logo i {
+                font-size: 17px;
+                color: var(--primary-color);
+                position: relative;
+                z-index: 2;
+            }
+
+        .sidebar-brand-link {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: inherit;
+        }
+
+            .sidebar-brand-link:hover {
+                text-decoration: none;
+            }
+
+        .sidebar-brand-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+            .sidebar-brand-text .brand-accent {
+                color: var(--primary-color);
+            }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            background: #ffffff;
+        }
+
+        .nav-section {
+            margin-bottom: 1.25rem;
+        }
+
+        .nav-section-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            padding: 0.25rem 0.75rem 0.5rem;
+        }
+
+        .nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nav-item {
+            margin-bottom: 2px;
+        }
+
+        .nav-link-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.65rem 0.875rem;
+            border-radius: 0.5rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background 0.15s, color 0.15s;
+        }
+
+            .nav-link-item i {
+                width: 18px;
+                text-align: center;
+                font-size: 0.95rem;
+                flex-shrink: 0;
+            }
+
+            .nav-link-item:hover {
+                background: #f1f5f9;
+                color: var(--text-dark);
+                text-decoration: none;
+            }
+
+            .nav-link-item.active {
+                background: #eff6ff;
+                color: var(--primary-color);
+                font-weight: 500;
+            }
+
+        .admin-settings-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.8rem 1rem;
+            background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-dark);
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+            .admin-settings-btn:hover {
+                background: linear-gradient(145deg, #eff6ff, #dbeafe);
+                border-color: var(--primary-color);
+                color: var(--primary-color);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+                text-decoration: none;
+            }
+
+            .admin-settings-btn i {
+                color: var(--primary-color);
+            }
+
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+            .main-content.no-sidebar {
+                margin-left: 0 !important;
+            }
+
+        .top-header {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.875rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .user-info-link {
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+        }
+
+            .user-info-link:hover {
+                background-color: #f1f5f9;
+            }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            line-height: 1.2;
+        }
+
+        .user-email {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .logout-link {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.875rem;
+            border-radius: 0.5rem;
+            color: #ef4444;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+            .logout-link:hover {
+                background: #fef2f2;
+                text-decoration: none;
+            }
+
+        .content-area {
+            padding: 2rem;
+            flex: 1;
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: var(--text-dark);
+            border-radius: 6px;
+        }
+
+            .mobile-toggle:hover {
+                background: #f1f5f9;
+            }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 999;
+        }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+        @@media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+                .sidebar.open {
+                    transform: translateX(0);
+                }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .content-area {
+                padding: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        @{
+            string ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+            string act = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+            bool isAdmin = User.IsInRole("Admin");
+        }
+
+        @if (isAdmin)
+        {
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <a href="@Url.Action("Index", "Admin")" class="sidebar-brand-link" title="Admin Paneli">
+                        <div class="sidebar-logo">
+                            <i class="fa-solid fa-utensils"></i>
+                        </div>
+                        <span class="sidebar-brand-text">Ofis<span class="brand-accent">Yemek</span></span>
+                    </a>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <div class="nav-section">
+                        <div class="nav-section-title">Yönetim</div>
+                        <ul class="nav-list">
+                            <li class="nav-item">
+                                <a href="@Url.Action("Index", "Admin")"
+                                   class="nav-link-item @(ctrl == "Admin" && act == "Index" ? "active" : "")">
+                                    <i class="fa-solid fa-chart-pie"></i>
+                                    Admin Paneli
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="@Url.Action("MenuManagement", "Menu")"
+                                   class="nav-link-item @(ctrl == "Menu" ? "active" : "")">
+                                    <i class="fa-solid fa-calendar-days"></i>
+                                    Menü Yönetimi
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="@Url.Action("FoodManagement", "Food")"
+                                   class="nav-link-item @(ctrl == "Food" ? "active" : "")">
+                                    <i class="fa-solid fa-bowl-food"></i>
+                                    Yemek Kataloğu
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="@Url.Action("CategoryManagement", "Category")"
+                                   class="nav-link-item @(ctrl == "Category" ? "active" : "")">
+                                    <i class="fa-solid fa-tags"></i>
+                                    Kategori Yönetimi
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="@Url.Action("UserManagement", "User")"
+                                   class="nav-link-item @(ctrl == "User" ? "active" : "")">
+                                    <i class="fa-solid fa-users"></i>
+                                    Kullanıcı Yönetimi
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    @* Mutfak & Stok bölümü devre dışı bırakıldı
+                        <div class="nav-section">
+                            <div class="nav-section-title">Mutfak & Stok</div>
+                            <ul class="nav-list">
+                                <li class="nav-item">
+                                    <a href="@Url.Action("StockManagement", "Stock")"
+                                       class="nav-link-item @(ctrl == "Stock" ? "active" : "")">
+                                        <i class="fa-solid fa-boxes-stacked"></i>
+                                        Stok Yönetimi
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="@Url.Action("RecipeManagement", "Recipe")"
+                                       class="nav-link-item @(ctrl == "Recipe" ? "active" : "")">
+                                        <i class="fa-solid fa-book-open"></i>
+                                        Reçete Yönetimi
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="@Url.Action("ProductionManagement", "Production")"
+                                       class="nav-link-item @(ctrl == "Production" ? "active" : "")">
+                                        <i class="fa-solid fa-industry"></i>
+                                        Üretim Kayıtları
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    *@
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">Raporlar & İzleme</div>
+                        <ul class="nav-list">
+                            <li class="nav-item">
+                                <a href="@Url.Action("DailyReport", "Report")"
+                                   class="nav-link-item @(ctrl == "Report" ? "active" : "")">
+                                    <i class="fa-solid fa-file-invoice"></i>
+                                    Gün Sonu Raporu
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="@Url.Action("SelectionManagement", "Selection")"
+                                   class="nav-link-item @(ctrl == "Selection" ? "active" : "")">
+                                    <i class="fa-solid fa-clipboard-list"></i>
+                                    Personel Seçimleri
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="@Url.Action("RatingManagement", "Rating")"
+                                   class="nav-link-item @(ctrl == "Rating" ? "active" : "")">
+                                    <i class="fa-solid fa-star"></i>
+                                    Değerlendirmeler
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                <div class="sidebar-footer">
+                    @* Şirket Ayarları butonu devre dışı bırakıldı
+                        <a href="@Url.Action("CompanySettings", "Settings")" class="admin-settings-btn @(ctrl == "Settings" && act == "CompanySettings" ? "active" : "")">
+                            <i class="fa-solid fa-building-user"></i>
+                            <span>Şirket Ayarları</span>
+                        </a>
+                    *@
+                </div>
+            </aside>
+        }
+
+        <div class="main-content @(!isAdmin ? "no-sidebar" : "")">
+            <header class="top-header">
+                @if (isAdmin)
+                {
+                    <button class="mobile-toggle" id="mobileToggle" aria-label="Menüyü aç">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                }
+                else
+                {
+                    <div></div>
+                }
+
+                <div style="display:flex; align-items:center; gap:1.25rem; margin-left:auto;">
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <a href="@Url.Action("UserSettings","Settings")" class="user-info-link" title="Profil Ayarlarına Git">
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    @User.Identity.Name.Substring(0, 1).ToUpper()
+                                </div>
+                                <div class="user-details">
+                                    <span class="user-name">
+                                        @(Session["FullName"] != null ? Session["FullName"].ToString() : User.Identity.Name)
+                                    </span>
+                                    <span class="user-email" style="display:flex; align-items:center; gap: 5px;">
+                                        @User.Identity.Name
+                                        <i class="fa-solid fa-gear" style="color: #94a3b8; font-size: 0.8rem;"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+
+                        <a href="@Url.Action("Logout", "Account")" class="logout-link">
+                            <i class="fa-solid fa-right-from-bracket"></i> Çıkış
+                        </a>
+                    }
+                </div>
+            </header>
+
+            <main class="content-area">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="ajaxModal" tabindex="-1" aria-labelledby="ajaxModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius:16px;">
+                <div class="modal-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+                    <h5 class="modal-title" id="ajaxModalLabel">İşlem</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body" id="ajaxModalBody">
+                  
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "timeOut": "3000"
+        };
+
+        $(document).ready(function () {
+            var token = $('input[name="__RequestVerificationToken"]').val();
+            if (token) {
+                $.ajaxSetup({
+                    headers: {
+                        'RequestVerificationToken': token
+                    }
+                });
+            }
+        });
+
+        var AjaxModal = {
+            modal: null,
+            init: function () {
+                this.modal = new bootstrap.Modal(document.getElementById('ajaxModal'));
+            },
+            open: function (url, title) {
+                $('#ajaxModalLabel').text(title || 'İşlem');
+                $('#ajaxModalBody').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
+                this.modal.show();
+
+                $.get(url, function (html) {
+                    $('#ajaxModalBody').html(html);
+                    $('#ajaxModalBody').find('form').on('submit', AjaxModal.submitForm);
+                }).fail(function () {
+                    $('#ajaxModalBody').html('<div class="alert alert-danger">Form yüklenemedi.</div>');
+                });
+            },
+            submitForm: function (e) {
+                e.preventDefault();
+                var form = $(this);
+                var url = form.attr('action');
+                var method = form.attr('method') || 'POST';
+                var data = form.serialize();
+
+                var submitBtn = form.find('button[type="submit"]');
+                submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Kaydediliyor...');
+
+                $.ajax({
+                    url: url,
+                    type: method,
+                    data: data,
+                    success: function (response) {
+                        if (response.success) {
+                            AjaxModal.modal.hide();
+                            toastr.success(response.message);
+                            AjaxModal.refreshTable();
+                        } else {
+                            toastr.error(response.message || 'Bir hata oluştu.');
+                            submitBtn.prop('disabled', false).html(submitBtn.data('original-text') || 'Kaydet');
+                        }
+                    },
+                    error: function () {
+                        toastr.error('Sunucu ile bağlantı kurulamadı.');
+                        submitBtn.prop('disabled', false).html(submitBtn.data('original-text') || 'Kaydet');
+                    }
+                });
+            },
+            refreshTable: function () {
+                var container = $('#tableContainer');
+                if (container.length) {
+                    var url = container.data('refresh-url');
+                    if (url) {
+                        $.get(url, function (html) {
+                            container.html(html);
+                        });
+                    }
+                }
+            }
+        };
+
+        $(function () {
+            AjaxModal.init();
+
+            $(document).on('click', '.btn-add-ajax', function (e) {
+                e.preventDefault();
+                var url = $(this).attr('href') || $(this).data('url');
+                var title = $(this).data('title') || 'Yeni Kayıt';
+                AjaxModal.open(url, title);
+            });
+
+            $(document).on('click', '.btn-edit-ajax', function (e) {
+                e.preventDefault();
+                var url = $(this).attr('href') || $(this).data('url');
+                var title = $(this).data('title') || 'Kayıt Düzenle';
+                AjaxModal.open(url, title);
+            });
+
+            var toggle = document.getElementById('mobileToggle');
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            if (toggle && sidebar) {
+                toggle.addEventListener('click', function () {
+                    sidebar.classList.toggle('open');
+                    overlay.classList.toggle('active');
+                });
+            }
+            if (overlay && sidebar) {
+                overlay.addEventListener('click', function () {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                });
+            }
+        });
+    </script>
+    @RenderSection("scripts", required: false)
+</body>
+</html>

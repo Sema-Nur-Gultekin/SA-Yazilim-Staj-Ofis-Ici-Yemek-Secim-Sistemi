@@ -1,0 +1,27 @@
+﻿@model ofis_ici_yemek_secim_sistemi.Models.FoodCategory
+
+<form action="@Url.Action("AddCategory", "Category")" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Kategori Adı <span class="text-danger">*</span></label>
+        <input type="text" name="Name" class="form-control py-2" placeholder="Örn: Ana Yemekler" required maxlength="50" style="border-radius:8px;" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Görüntüleme Sırası</label>
+        <input type="number" name="DisplayOrder" class="form-control py-2" placeholder="Örn: 1" min="1" style="border-radius:8px;" />
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Açıklama</label>
+        <textarea name="Description" class="form-control" rows="3" placeholder="Opsiyonel notlar" maxlength="250" style="border-radius:8px;"></textarea>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+        <button type="submit" class="btn btn-primary" data-original-text="<i class='fa-solid fa-floppy-disk me-1'></i>Kaydet">
+            <i class="fa-solid fa-floppy-disk me-1"></i>Kaydet
+        </button>
+    </div>
+</form>

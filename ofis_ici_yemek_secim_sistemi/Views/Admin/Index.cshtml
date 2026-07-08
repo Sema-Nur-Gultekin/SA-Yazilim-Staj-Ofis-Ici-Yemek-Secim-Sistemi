@@ -1,0 +1,193 @@
+﻿<style>
+    .admin-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        padding: 2rem 0;
+    }
+
+    .admin-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: all 0.3s;
+    }
+
+        .admin-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+    .card-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .icon-blue {
+        background: #f0f9ff;
+        color: #3b82f6;
+    }
+
+    .icon-green {
+        background: #f0fdf4;
+        color: #22c55e;
+    }
+
+    .icon-orange {
+        background: #fff7ed;
+        color: #f97316;
+    }
+
+    .icon-purple {
+        background: #f5f3ff;
+        color: #8b5cf6;
+    }
+
+    .icon-teal {
+        background: #f0fdfa;
+        color: #14b8a6;
+    }
+
+    .icon-rose {
+        background: #fff1f2;
+        color: #e11d48;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-text {
+        color: #64748b;
+        font-size: 0.875rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-admin {
+        padding: 0.5rem 1.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: inline-block;
+    }
+
+    .btn-blue {
+        background: #3b82f6;
+        color: white;
+    }
+
+        .btn-blue:hover {
+            background: #2563eb;
+            color: white;
+        }
+
+    .btn-outline {
+        border: 2px solid #e2e8f0;
+        color: #64748b;
+    }
+
+        .btn-outline:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+</style>
+
+<div class="admin-grid">
+ 
+    <div class="admin-card">
+        <div class="card-icon icon-blue">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+        </div>
+        <h3 class="card-title">Menü Yönetimi</h3>
+        <p class="card-text">Haftalık yemek menülerini ekleyin ve yönetin.</p>
+        <a href="@Url.Action("MenuManagement", "Menu")" class="btn-admin btn-blue">Menülere Git</a>
+    </div>
+
+    <div class="admin-card">
+        <div class="card-icon icon-green">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                <path d="M18 20V10"></path>
+                <path d="M12 20V4"></path>
+                <path d="M6 20v-6"></path>
+            </svg>
+        </div>
+        <h3 class="card-title">Yemek Kataloğu</h3>
+        <p class="card-text">Yemek tanımlarını ve tarifleri yönetin.</p>
+        <a href="@Url.Action("FoodManagement", "Food")" class="btn-admin btn-blue">Kataloğa Git</a>
+    </div>
+
+  
+    <div class="admin-card">
+        <div class="card-icon icon-orange">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+        </div>
+        <h3 class="card-title">Kategori Yönetimi</h3>
+        <p class="card-text">Yemek kategorilerini düzenleyin.</p>
+        <a href="@Url.Action("CategoryManagement", "Category")" class="btn-admin btn-blue">Kategorilere Git</a>
+    </div>
+
+  
+    <div class="admin-card">
+        <div class="card-icon icon-green">
+            <i class="fa-solid fa-clipboard-list" style="font-size: 32px;"></i>
+        </div>
+        <h3 class="card-title">Personel Seçimleri</h3>
+        <p class="card-text">Çalışanların yemek seçimlerini görüntüleyin.</p>
+        <a href="@Url.Action("SelectionManagement", "Selection")" class="btn-admin btn-outline">Seçimleri Gör</a>
+    </div>
+
+  
+    <div class="admin-card">
+        <div class="card-icon icon-orange">
+            <i class="fa-solid fa-star" style="font-size: 32px;"></i>
+        </div>
+        <h3 class="card-title">Değerlendirmeler</h3>
+        <p class="card-text">Yemek puanlamalarını ve yorumları inceleyin.</p>
+        <a href="@Url.Action("RatingManagement", "Rating")" class="btn-admin btn-outline">Yorumları Gör</a>
+    </div>
+
+
+    <div class="admin-card">
+        <div class="card-icon icon-purple">
+            <i class="fa-solid fa-users" style="font-size: 32px;"></i>
+        </div>
+        <h3 class="card-title">Kullanıcı Yönetimi</h3>
+        <p class="card-text">Şirketinize kayıtlı kullanıcıları görüntüleyin ve yönetin.</p>
+        <a href="@Url.Action("UserManagement", "User")" class="btn-admin btn-blue">Kullanıcıları Yönet</a>
+    </div>
+
+    <div class="admin-card">
+        <div class="card-icon icon-green">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                <path d="M18 20V10"></path>
+                <path d="M12 20V4"></path>
+                <path d="M6 20v-6"></path>
+            </svg>
+        </div>
+        <h3 class="card-title">Gün Sonu Raporu</h3>
+        <p class="card-text">Günlük seçimleri görüntüleyin ve Excel'e aktarın.</p>
+        <a href="@Url.Action("DailyReport", "Report")" class="btn-admin btn-blue">Raporu Gör</a>
+    </div>
+</div>

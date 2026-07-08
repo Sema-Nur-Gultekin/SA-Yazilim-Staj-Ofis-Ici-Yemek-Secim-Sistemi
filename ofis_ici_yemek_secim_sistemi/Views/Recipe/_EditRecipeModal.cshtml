@@ -1,0 +1,58 @@
+﻿@model ofis_ici_yemek_secim_sistemi.Models.RecipeIngredient
+@{
+    var foods = ViewBag.Foods as List<ofis_ici_yemek_secim_sistemi.Models.Food>;
+    var stockItems = ViewBag.StockItems as List<ofis_ici_yemek_secim_sistemi.Models.StockItem>;
+}
+
+<form action="@Url.Action("EditRecipe", "Recipe", new { id = Model.ID })" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Yemek <span class="text-danger">*</span></label>
+        <select name="FoodID" class="form-select py-2" required style="border-radius:8px;">
+            @if (foods != null)
+            {
+                foreach (var f in foods)
+                {
+                    <option value="@f.ID" @(Model.FoodID == f.ID ? "selected" : "")>@f.Name</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Stok Malzemesi <span class="text-danger">*</span></label>
+        <select name="StockItemID" class="form-select py-2" required style="border-radius:8px;">
+            @if (stockItems != null)
+            {
+                foreach (var s in stockItems)
+                {
+                    <option value="@s.ID" @(Model.StockItemID == s.ID ? "selected" : "")>@s.Name (@s.Unit)</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Gereken Miktar <span class="text-danger">*</span></label>
+        <input type="number" name="RequiredQuantity" class="form-control py-2" step="0.01" value="@Model.RequiredQuantity.ToString("F2")" required style="border-radius:8px;" />
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Birim <span class="text-danger">*</span></label>
+        <select name="Unit" class="form-select py-2" required style="border-radius:8px;">
+            <option value="kg" @(Model.Unit == "kg" ? "selected" : "")>Kilogram (kg)</option>
+            <option value="lt" @(Model.Unit == "lt" ? "selected" : "")>Litre (lt)</option>
+            <option value="adet" @(Model.Unit == "adet" ? "selected" : "")>Adet</option>
+            <option value="gr" @(Model.Unit == "gr" ? "selected" : "")>Gram (gr)</option>
+            <option value="ml" @(Model.Unit == "ml" ? "selected" : "")>Mililitre (ml)</option>
+        </select>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+        <button type="submit" class="btn btn-primary" data-original-text="<i class='fa-solid fa-floppy-disk me-1'></i>Güncelle">
+            <i class="fa-solid fa-floppy-disk me-1"></i>Güncelle
+        </button>
+    </div>
+</form>

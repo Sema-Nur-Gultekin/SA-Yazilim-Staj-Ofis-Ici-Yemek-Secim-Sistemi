@@ -1,0 +1,282 @@
+﻿@model List<ofis_ici_yemek_secim_sistemi.Controllers.MenuController.MenuGroupViewModel>
+@{
+    var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
+    var foodCategoryNames = ViewBag.FoodCategoryNames as Dictionary<int, string>;
+}
+
+<style>
+    .menu-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .menu-card {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        border: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
+    }
+
+        .menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+            border-color: #cbd5e1;
+        }
+
+    .menu-card-header {
+        padding: 1.25rem;
+        border-bottom: 1px dashed #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .header-sabah {
+        background: linear-gradient(135deg, #ffedd5, #fed7aa);
+    }
+
+    .header-ogle {
+        background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    }
+
+    .header-aksam {
+        background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    }
+
+    .menu-date {
+        font-weight: 800;
+        color: #1e293b;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .menu-meal-badge {
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.6);
+        color: #0f172a;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .menu-card-body {
+        padding: 1.25rem;
+        flex-grow: 1;
+    }
+
+    .category-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+
+    .food-pills-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+        .food-pills-container:last-child {
+            margin-bottom: 0;
+        }
+
+    .food-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.8rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #334155;
+        transition: all 0.2s ease;
+    }
+
+        .food-pill.locked {
+            background: #fffbeb;
+            border-color: #fcd34d;
+            color: #92400e;
+        }
+
+        .food-pill.inactive {
+            background: #f1f5f9;
+            color: #94a3b8;
+            text-decoration: line-through;
+            border-style: dashed;
+        }
+
+    .menu-card-footer {
+        padding: 1rem 1.25rem;
+        background: #f8fafc;
+        border-top: 1px solid #f1f5f9;
+        border-radius: 0 0 16px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .action-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-action {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 8px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .status-indicator {
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+    }
+
+    .status-active {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-passive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+</style>
+
+@if (Model != null && Model.Any())
+{
+    <div class="menu-card-grid">
+        @foreach (var group in Model)
+        {
+           
+            string headerClass = group.MealType == "Sabah" ?
+                                 "header-sabah" :
+                                 group.MealType == "Öğle" ?
+                                 "header-ogle" : "header-aksam";
+
+            bool isPast = group.Date < DateTime.Today;
+            bool hasAnySelection = group.Items.Any(i => i.HasAnySelection);
+
+           
+            bool isGroupActive = group.Items.First().IsActive;
+
+        
+            var categoryGroups = group.Items
+                .GroupBy(m => foodCategoryNames != null && foodCategoryNames.ContainsKey(m.FoodID) ? foodCategoryNames[m.FoodID] : "Kategorisiz")
+                .OrderBy(g => g.Key)
+                .ToList();
+
+            <div class="menu-card"
+                 data-is-past="@isPast.ToString().ToLower()"
+                 data-has-selection="@hasAnySelection.ToString().ToLower()"
+                 data-is-active="@isGroupActive.ToString().ToLower()">
+
+                <div class="menu-card-header @headerClass">
+                    <div class="menu-date">
+                        <i class="fa-solid fa-calendar-day text-dark opacity-50"></i>
+                        @group.Date.ToString("dd MMMM yyyy")
+                    </div>
+                    <div class="menu-meal-badge">@group.MealType</div>
+                </div>
+
+                <div class="menu-card-body">
+                    @foreach (var catGroup in categoryGroups)
+                    {
+                        <div class="category-title">@catGroup.Key</div>
+                        <div class="food-pills-container">
+                            @foreach (var item in catGroup)
+                            {
+                                string foodName = foodNames != null && foodNames.ContainsKey(item.FoodID) ? foodNames[item.FoodID] : "Bilinmeyen Yemek";
+                                string tagClass = item.HasAnySelection ? "locked" : "";
+
+                                if (!item.IsActive) { tagClass += " inactive"; }
+
+                                <div class="food-pill @tagClass">
+                                    @if (item.HasAnySelection)
+                                    {
+                                        <i class="fa-solid fa-lock text-warning"></i>
+                                    }
+                                    @foodName
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="menu-card-footer">
+                    <div>
+                        <span class="status-indicator @(isGroupActive ? "status-active" : "status-passive")">
+                            <i class="fa-solid @(isGroupActive ? "fa-circle-check" : "fa-circle-xmark") me-1"></i>
+                            @(isGroupActive ? "Aktif" : "Pasif")
+                        </span>
+                    </div>
+
+                    <div class="action-group">
+                        @if (isPast)
+                        {
+                            <button class="btn btn-outline-secondary btn-action" disabled title="Tarihi geçen menüler düzenlenemez">
+                                <i class="fa-solid fa-pen"></i> Düzenle
+                            </button>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("EditMenu", "Menu", new { date = group.Date.ToString("yyyy-MM-dd"), mealType = group.MealType })"
+                               class="btn btn-outline-primary btn-action btn-edit-ajax" data-title="Menü Düzenle">
+                                <i class="fa-solid fa-pen"></i> Düzenle
+                            </a>
+                        }
+
+                        @using (Html.BeginForm("ToggleMenuStatus", "Menu", FormMethod.Post, new { @class = "m-0" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="date" value="@group.Date.ToString("yyyy-MM-dd")" />
+                            <input type="hidden" name="mealType" value="@group.MealType" />
+                            <button type="button" class="btn btn-outline-warning btn-action btn-toggle-status" title="Durumu Değiştir">
+                                <i class="fa-solid fa-power-off"></i>
+                            </button>
+                        }
+
+                        @using (Html.BeginForm("DeleteMenu", "Menu", FormMethod.Post, new { @class = "m-0" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="date" value="@group.Date.ToString("yyyy-MM-dd")" />
+                            <input type="hidden" name="mealType" value="@group.MealType" />
+                            <button type="button" class="btn btn-outline-danger btn-action btn-delete-menu" title="Tamamen Sil">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
+            <i class="fa-solid fa-utensils fs-1 text-muted opacity-50"></i>
+        </div>
+        <h5 class="fw-bold text-dark">Kayıt Bulunamadı</h5>
+        <p class="text-muted">Arama kriterlerinize uygun veya planlanmış bir menü bulunmamaktadır.</p>
+    </div>
+}

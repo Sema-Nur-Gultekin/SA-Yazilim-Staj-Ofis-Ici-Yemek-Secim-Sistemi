@@ -1,0 +1,330 @@
+﻿@{
+    Layout = null;
+    ViewBag.Title = "Kurumsal Kayıt Ol";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Ofis Yemek Seçim</title>
+    @Styles.Render("~/Content/css")
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(160deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        .register-container {
+            width: 100%;
+            max-width: 560px;
+            padding: 10px;
+        }
+
+        .register-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08), 0 5px 15px rgba(0, 0, 0, 0.03);
+            padding: 2.25rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .register-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 80px;
+                height: 4px;
+                background: linear-gradient(90deg, #3b82f6, #60a5fa);
+                border-radius: 0 0 4px 4px;
+            }
+
+        .register-brand {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 50%;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+
+            .logo-wrapper i {
+                font-size: 26px;
+                color: #3b82f6;
+            }
+
+        .brand-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            letter-spacing: -0.03em;
+        }
+
+        .brand-accent {
+            color: #3b82f6;
+        }
+
+        .brand-tagline {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1.15rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.1rem;
+            flex: 1;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.813rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 0.4rem;
+        }
+
+        .form-input {
+            width: 100%;
+            max-width: 100%;
+            display: block;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: #1e293b;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+            box-sizing: border-box;
+        }
+
+        select.form-input {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233b82f6' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.1em;
+            padding-right: 2.5rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+        }
+
+        .alert {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-left: 3px solid #ef4444;
+            color: #dc2626;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            font-size: 0.813rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 0.85rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            font-size: 0.938rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+            box-sizing: border-box;
+        }
+
+            .btn-register:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+            }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 1.25rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid #f1f5f9;
+        }
+
+            .login-footer span {
+                font-size: 0.813rem;
+                color: #64748b;
+            }
+
+            .login-footer a {
+                font-size: 0.813rem;
+                color: #3b82f6;
+                text-decoration: none;
+                font-weight: 600;
+            }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-card">
+
+            <div class="register-brand">
+                <div class="logo-wrapper">
+                    <i class="fa-solid fa-building-user"></i>
+                </div>
+                <h1 class="brand-name">Ofis<span class="brand-accent">Yemek</span></h1>
+                <p class="brand-tagline">Kurumsal Kayıt ve Yönetim Paneli</p>
+            </div>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    @ViewBag.Error
+                </div>
+            }
+
+            <form method="post" action="@Url.Action("Register", "Account")">
+                @Html.AntiForgeryToken()
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="roleSelection">Kayıt Türü / Yetki Rolü</label>
+                        <select name="role" id="roleSelection" class="form-input" required>
+                            <option value="User" @(Request["role"] == "User" ? "selected" : "")>Standart Kullanıcı (Personel)</option>
+                            <option value="Admin" @(Request["role"] == "Admin" ? "selected" : "")>Şirket Admini (Yeni Organizasyon)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="companySelectContainer">
+                        <label class="form-label" for="selectedCompanyId">Çalıştığınız Şirket</label>
+                        <select name="selectedCompanyId" id="selectedCompanyId" class="form-input">
+                            <option value="">-- Şirket Seçiniz --</option>
+                            @if (ViewBag.Companies != null)
+                            {
+                                foreach (var comp in ViewBag.Companies)
+                                {
+                                    <option value="@comp.ID" @(Request["selectedCompanyId"] == comp.ID.ToString() ? "selected" : "")>@comp.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="companyNameContainer" style="display:none;">
+                        <label class="form-label" for="companyName">Kurulacak Şirket Adı</label>
+                        <input type="text" name="companyName" id="companyName" class="form-input" placeholder="Örn: Akıncı Teknolojileri" value="@Request["companyName"]" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="name">Ad Soyad</label>
+                        <input type="text" name="name" id="name" class="form-input" placeholder="Ahmet Yılmaz" value="@Request["name"]" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="email">Kurumsal E-posta</label>
+                        <input type="email" name="email" id="email" class="form-input" placeholder="ahmet@sirket.com" value="@Request["email"]" required />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="department">Departman</label>
+                        <input type="text" name="department" id="department" class="form-input" placeholder="Yazılım Geliştirme" value="@Request["department"]" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="location">Görev Ofisi / Lokasyon</label>
+                        <input type="text" name="location" id="location" class="form-input" placeholder="Kayseri Ofisi" value="@Request["location"]" required />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="password">Şifre</label>
+                        <input type="password" name="password" id="password" class="form-input" placeholder="••••••••" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="confirmPassword">Şifre Tekrar</label>
+                        <input type="password" name="confirmPassword" id="confirmPassword" class="form-input" placeholder="••••••••" required />
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-register">
+                    <i class="fa-solid fa-shield-halved"></i> Güvenli Kayıt İşlemini Tamamla
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <span>Zaten sistemde kayıtlı mısınız?</span>
+                <a href="@Url.Action("Login", "Account")">Giriş Yap</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            function toggleCompanyFields() {
+                var selectedRole = $('#roleSelection').val();
+
+                if (selectedRole === 'Admin') {
+                  
+                    $('#companySelectContainer').hide();
+                    $('#selectedCompanyId').removeAttr('required').val('');
+
+                   
+                    $('#companyNameContainer').show();
+                    $('#companyName').attr('required', 'required');
+                } else {
+                   
+                    $('#companyNameContainer').hide();
+                    $('#companyName').removeAttr('required').val('');
+
+                    $('#companySelectContainer').show();
+                    $('#selectedCompanyId').attr('required', 'required');
+                }
+            }
+
+            $('#roleSelection').change(function () {
+                toggleCompanyFields();
+            });
+
+            toggleCompanyFields();
+        });
+    </script>
+</body>
+</html>

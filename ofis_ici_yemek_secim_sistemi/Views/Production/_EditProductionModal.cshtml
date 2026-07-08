@@ -1,0 +1,58 @@
+﻿@model ofis_ici_yemek_secim_sistemi.Models.ProductionRecord
+@{
+    var foods = ViewBag.Foods as List<ofis_ici_yemek_secim_sistemi.Models.Food>;
+}
+
+<form action="@Url.Action("EditProduction", "Production", new { id = Model.ID })" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Tarih</label>
+        <input type="date" name="Date" class="form-control py-2" value="@Model.Date.ToString("yyyy-MM-dd")" required style="border-radius:8px;" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Öğün Tipi</label>
+        <select name="MealType" class="form-select py-2" required style="border-radius:8px;">
+            <option value="Sabah" @(Model.MealType == "Sabah" ? "selected" : "")>Sabah</option>
+            <option value="Öğle" @(Model.MealType == "Öğle" ? "selected" : "")>Öğle</option>
+            <option value="Akşam" @(Model.MealType == "Akşam" ? "selected" : "")>Akşam</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Yemek</label>
+        <select name="FoodID" class="form-select py-2" required style="border-radius:8px;">
+            <option value="">— Yemek Seçin —</option>
+            @if (foods != null)
+            {
+                foreach (var f in foods)
+                {
+                    <option value="@f.ID" @(Model.FoodID == f.ID ? "selected" : "")>@f.Name</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Planlanan Talep</label>
+            <input type="number" name="PlannedDemandQuantity" class="form-control py-2" value="@(Model.PlannedDemandQuantity?.ToString() ?? "")" style="border-radius:8px;" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Üretilen Miktar</label>
+            <input type="number" name="ProducedQuantity" class="form-control py-2" value="@(Model.ProducedQuantity?.ToString() ?? "")" style="border-radius:8px;" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Fiili Tüketim</label>
+            <input type="number" name="ActualConsumedQuantity" class="form-control py-2" value="@(Model.ActualConsumedQuantity?.ToString() ?? "")" style="border-radius:8px;" />
+        </div>
+    </div>
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Not</label>
+        <textarea name="Note" class="form-control" rows="2" maxlength="300" style="border-radius:8px;">@Model.Note</textarea>
+    </div>
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+        <button type="submit" class="btn btn-primary" data-original-text="<i class='fa-solid fa-floppy-disk me-1'></i>Güncelle">
+            <i class="fa-solid fa-floppy-disk me-1"></i>Güncelle
+        </button>
+    </div>
+</form>

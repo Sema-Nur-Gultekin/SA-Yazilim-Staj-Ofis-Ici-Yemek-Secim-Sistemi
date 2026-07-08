@@ -1,0 +1,22 @@
+﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.StockItem>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Stok Yönetimi";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark m-0">Stok Yönetimi</h3>
+        <p class="text-muted small m-0">Mutfakta kullanılan malzeme ve ham madde stoklarını takip edin.</p>
+    </div>
+    <a href="@Url.Action("AddStock", "Stock")"
+       class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
+       data-title="Yeni Stok Kalemi"
+       style="border-radius:8px;">
+        <i class="fa-solid fa-plus me-2"></i>Yeni Stok Kalemi
+    </a>
+</div>
+
+<div id="tableContainer" data-refresh-url="@Url.Action("StockManagement", "Stock")">
+    @Html.Partial("_StockList", Model)
+</div>

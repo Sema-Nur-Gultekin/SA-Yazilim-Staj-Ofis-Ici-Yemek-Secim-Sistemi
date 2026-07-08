@@ -1,0 +1,54 @@
+﻿@model ofis_ici_yemek_secim_sistemi.Models.Food
+@{
+    var cats = ViewBag.Categories as List<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>;
+}
+
+<form action="@Url.Action("EditFood", "Food", new { id = Model.ID })" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Yemek Adı <span class="text-danger">*</span></label>
+        <input type="text" name="Name" class="form-control py-2" value="@Model.Name" required maxlength="150" style="border-radius:8px;" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Kategorisi</label>
+        <select name="CategoryID" class="form-select py-2" style="border-radius:8px;">
+            <option value="">— Kategori Seçiniz (Opsiyonel) —</option>
+            @if (cats != null)
+            {
+                foreach (var cat in cats)
+                {
+                    <option value="@cat.ID" @(Model.CategoryID == cat.ID ? "selected" : "")>@cat.Name</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Alerjenler</label>
+        <input type="text" name="Allergens" class="form-control py-2" value="@Model.Allergens" maxlength="300" style="border-radius:8px;" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">İçindekiler / Malzeme Özeti</label>
+        <textarea name="Ingredients" class="form-control" rows="2" maxlength="500" style="border-radius:8px;">@Model.Ingredients</textarea>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Açıklama</label>
+        <textarea name="Description" class="form-control" rows="3" maxlength="500" style="border-radius:8px;">@Model.Description</textarea>
+    </div>
+
+    <div class="mb-4 form-check form-switch">
+        <input class="form-check-input" type="checkbox" name="IsActive" value="true" id="isActiveSwitch" @(Model.IsActive ? "checked" : "") />
+        <label class="form-check-label fw-semibold" for="isActiveSwitch">Aktif</label>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+        <button type="submit" class="btn btn-primary" data-original-text="<i class='fa-solid fa-floppy-disk me-1'></i>Güncelle">
+            <i class="fa-solid fa-floppy-disk me-1"></i>Güncelle
+        </button>
+    </div>
+</form>

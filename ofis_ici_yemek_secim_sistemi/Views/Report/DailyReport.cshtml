@@ -1,0 +1,113 @@
+﻿@{
+    ViewBag.Title = "Gün Sonu Raporu";
+    DateTime reportDate = ViewBag.ReportDate != null ? (DateTime)ViewBag.ReportDate : DateTime.Today;
+    string mealType = ViewBag.MealType as string ?? "";
+    int? selectedCategoryId = ViewBag.SelectedCategoryId as int?;
+    var reportData = ViewBag.ReportData as List<ofis_ici_yemek_secim_sistemi.Controllers.ReportRow>;
+    var categories = ViewBag.Categories as List<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark m-0">Gün Sonu Raporu</h3>
+        <p class="text-muted small m-0">Seçilen tarih ve öğüne göre yemek bazında toplam seçim sayılarını görüntüleyin.</p>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
+    <div class="card-body">
+        <form method="get" action="@Url.Action("DailyReport", "Report")" class="row g-3 align-items-end">
+            <div class="col-auto">
+                <label class="form-label fw-semibold small">Tarih</label>
+                <input type="date" name="date" class="form-control" value="@reportDate.ToString("yyyy-MM-dd")" style="border-radius:8px;" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label fw-semibold small">Öğün</label>
+                <select name="mealType" class="form-select" style="border-radius:8px;">
+                    <option value="">— Tümü —</option>
+                    <option value="Sabah" @(mealType == "Sabah" ? "selected" : "")>Sabah</option>
+                    <option value="Öğle" @(mealType == "Öğle" ? "selected" : "")>Öğle</option>
+                    <option value="Akşam" @(mealType == "Akşam" ? "selected" : "")>Akşam</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label fw-semibold small">Kategori</label>
+                <select name="categoryId" class="form-select" style="border-radius:8px;">
+                    <option value="">— Tümü —</option>
+                    @if (categories != null)
+                    {
+                        foreach (var cat in categories)
+                        {
+                            <option value="@cat.ID" @(selectedCategoryId == cat.ID ? "selected" : "")>@cat.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary fw-semibold" style="border-radius:8px;">
+                    <i class="fa-solid fa-magnifying-glass me-1"></i> Getir
+                </button>
+            </div>
+            <div class="col-auto ms-auto">
+                <a href="@Url.Action("ExportDailyReport", "Report", new { date = reportDate.ToString("yyyy-MM-dd"), mealType = mealType, categoryId = selectedCategoryId })"
+                   class="btn btn-success fw-semibold" style="border-radius:8px;">
+                    <i class="fa-solid fa-file-excel me-1"></i> Excel Olarak İndir
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius:12px;">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="padding:1rem 1.5rem;">Kategori</th>
+                    <th>Yemek Adı</th>
+                    <th>Öğün</th>
+                    <th>Seçim Sayısı</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (reportData != null && reportData.Any())
+                {
+                    foreach (var item in reportData)
+                    {
+                        <tr>
+                            <td style="padding:1rem 1.5rem;">@item.Category</td>
+                            <td class="fw-semibold text-dark">@item.FoodName</td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary px-2 py-1" style="border-radius:6px;">
+                                    @item.MealType
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary-subtle text-primary px-2 py-1 fw-bold" style="border-radius:6px;">
+                                    @item.SelectionCount
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                    <tr class="table-light fw-bold">
+                        <td colspan="3" class="text-end" style="padding:1rem 1.5rem;">Toplam Seçim:</td>
+                        <td>
+                            <span class="badge bg-primary text-white px-2 py-1" style="border-radius:6px;">
+                                @reportData.Sum(r => r.SelectionCount)
+                            </span>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-chart-bar d-block fs-1 mb-2 text-black-50"></i>
+                            Bu tarih ve öğünde herhangi bir seçim bulunmamaktadır.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
