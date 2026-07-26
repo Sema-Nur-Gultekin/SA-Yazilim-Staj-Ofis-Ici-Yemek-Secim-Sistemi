@@ -1,0 +1,100 @@
+﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.User>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Kullanıcı Yönetimi";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark m-0">Şirket Kullanıcıları</h3>
+        <p class="text-muted small m-0">Firmanıza kayıtlı tüm personel ve yönetici hesaplarını görüntüleyin.</p>
+    </div>
+    <a href="@Url.Action("AddUser", "User")"
+       class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
+       data-title="Yeni Kullanıcı Ekle"
+       style="border-radius:8px;">
+        <i class="fa-solid fa-user-plus me-2"></i>Yeni Kullanıcı Ekle
+    </a>
+</div>
+
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
+    <div class="card-body py-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small">Arama</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white" style="border-radius:8px 0 0 8px;">
+                        <i class="fa-solid fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="searchInput" class="form-control py-2"
+                           placeholder="Ad, e-posta, departman..."
+                           value="@(ViewBag.Search ?? "")" style="border-radius:0 8px 8px 0;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tableContainer" data-refresh-url="@Url.Action("UserManagement", "User")">
+    @Html.Partial("_UserList", Model)
+</div>
+
+@section scripts {
+    <script>
+        $(function () {
+         
+            var searchTimer;
+            $('#searchInput').on('keyup', function () {
+                clearTimeout(searchTimer);
+                var term = $(this).val();
+                searchTimer = setTimeout(function () {
+                    $.get('@Url.Action("UserManagement", "User")', { search: term }, function (html) {
+                        $('#tableContainer').html(html);
+                    });
+                }, 400);
+            });
+
+          
+            $(document).on('click', '.btn-delete-user', function (e) {
+                e.preventDefault();
+                var form = $(this).closest('form');
+                var userName = $(this).data('name');
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "'" + userName + "' adlı kullanıcıyı kalıcı olarak silmek istediğinize emin misiniz?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'Vazgeç'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: form.attr('action'),
+                            type: 'POST',
+                            data: form.serialize(),
+                            success: function (response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                  
+                                    var term = $('#searchInput').val();
+                                    $.get('@Url.Action("UserManagement", "User")', { search: term }, function (html) {
+                                        $('#tableContainer').html(html);
+                                    });
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function () {
+                                toastr.error('Silme işlemi sırasında hata oluştu.');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,113 @@
+﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.Selection>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Personel Yemek Seçimleri";
+}
+
+<div class="mb-4">
+    <h3 class="fw-bold text-dark m-0">Personel Yemek Seçimleri</h3>
+    <p class="text-muted small m-0">Çalışanların hangi gün hangi yemekleri seçtiğini görüntüleyin.</p>
+</div>
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
+    <div class="card-body py-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label fw-semibold small">Tarih</label>
+                <input type="date" id="dateFilter" class="form-control py-2"
+                       value="@(ViewBag.Date != null ? ((DateTime)ViewBag.Date).ToString("yyyy-MM-dd") : "")"
+                       style="border-radius:8px;" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold small">Öğün</label>
+                <select id="mealTypeFilter" class="form-select py-2" style="border-radius:8px;">
+                    <option value="">— Tümü —</option>
+                    <option value="Sabah" @(ViewBag.MealType == "Sabah" ? "selected" : "")>Sabah</option>
+                    <option value="Öğle" @(ViewBag.MealType == "Öğle" ? "selected" : "")>Öğle</option>
+                    <option value="Akşam" @(ViewBag.MealType == "Akşam" ? "selected" : "")>Akşam</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small">Arama</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white" style="border-radius:8px 0 0 8px;">
+                        <i class="fa-solid fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="searchInput" class="form-control py-2"
+                           placeholder="Personel adı veya yemek adı..."
+                           value="@(ViewBag.Search ?? "")" style="border-radius:0 8px 8px 0;" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tableContainer" data-refresh-url="@Url.Action("SelectionManagement", "Selection")">
+    @Html.Partial("_SelectionList", Model)
+</div>
+
+@section scripts {
+    <script>
+        $(function () {
+            function applyFilters() {
+                var date = $('#dateFilter').val();
+                var mealType = $('#mealTypeFilter').val();
+                var search = $('#searchInput').val();
+
+                $.get('@Url.Action("SelectionManagement", "Selection")', {
+                    date: date || null,
+                    mealType: mealType || null,
+                    search: search || null
+                }, function (html) {
+                    $('#tableContainer').html(html);
+                });
+            }
+
+            $('#dateFilter, #mealTypeFilter').on('change', applyFilters);
+
+            var searchTimer;
+            $('#searchInput').on('keyup', function () {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(applyFilters, 400);
+            });
+
+            $(document).on('click', '.btn-delete-selection-group', function (e) {
+                e.preventDefault();
+                var form = $(this).closest('form');
+                var userName = $(this).data('user');
+                var date = $(this).data('date');
+                var meal = $(this).data('meal');
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "'" + userName + "' kişisinin " + date + " - " + meal + " öğünündeki tüm seçimlerini silmek istediğinize emin misiniz?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'Vazgeç'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: form.attr('action'),
+                            type: 'POST',
+                            data: form.serialize(),
+                            success: function (response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    applyFilters();
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function () {
+                                toastr.error('Silme işlemi sırasında hata oluştu.');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

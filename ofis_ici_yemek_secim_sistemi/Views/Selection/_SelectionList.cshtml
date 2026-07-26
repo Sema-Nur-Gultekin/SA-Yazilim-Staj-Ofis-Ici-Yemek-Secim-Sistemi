@@ -1,0 +1,90 @@
+﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.Selection>
+@{
+    var userNames = ViewBag.UserNames as Dictionary<int, string>;
+    var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
+    var menuDict = ViewBag.MenuDict as Dictionary<int, (DateTime Date, string MealType, int FoodID)>;
+
+    var grouped = Model
+        .GroupBy(s => new
+        {
+            s.UserID,
+            Date = menuDict.ContainsKey(s.MenuItemID) ? (DateTime?)menuDict[s.MenuItemID].Date : null,
+            MealType = menuDict.ContainsKey(s.MenuItemID) ? menuDict[s.MenuItemID].MealType : ""
+        })
+        .Select(g => new
+        {
+            UserID = g.Key.UserID,
+            UserName = userNames != null && userNames.ContainsKey(g.Key.UserID) ? userNames[g.Key.UserID] : "Bilinmeyen",
+            Date = g.Key.Date,
+            MealType = g.Key.MealType,
+            FoodList = string.Join(", ", g.Select(s =>
+            {
+                if (menuDict.ContainsKey(s.MenuItemID))
+                {
+                    var menu = menuDict[s.MenuItemID];
+                    return foodNames != null && foodNames.ContainsKey(menu.FoodID) ? foodNames[menu.FoodID] : "?";
+                }
+                return "?";
+            })),
+            SelectionIDs = g.Select(s => s.ID).ToList()
+        })
+        .OrderByDescending(g => g.Date)
+        .ThenBy(g => g.UserName)
+        .ToList();
+}
+
+<div class="card shadow-sm border-0" style="border-radius:12px;">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="padding:1rem 1.5rem;">Tarih</th>
+                    <th>Öğün</th>
+                    <th>Personel</th>
+                    <th>Seçilen Yemekler</th>
+                    <th style="min-width:80px;">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (grouped.Any())
+                {
+                    foreach (var group in grouped)
+                    {
+                        <tr>
+                            <td style="padding:1rem 1.5rem;" class="fw-semibold">@(group.Date.HasValue ? group.Date.Value.ToString("dd.MM.yyyy") : "-")</td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary px-2 py-1" style="border-radius:6px;">@group.MealType</span>
+                            </td>
+                            <td>@group.UserName</td>
+                            <td class="text-dark">@group.FoodList</td>
+                            <td>
+                                @using (Html.BeginForm("DeleteSelectionGroup", "Selection", FormMethod.Post, new { @class = "d-inline" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="ids" value="@string.Join(",", group.SelectionIDs)" />
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger btn-delete-selection-group"
+                                            data-user="@group.UserName"
+                                            data-date="@(group.Date.HasValue ? group.Date.Value.ToString("dd.MM.yyyy") : "")"
+                                            data-meal="@group.MealType"
+                                            title="Tüm seçimleri sil">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-clipboard-list d-block fs-1 mb-2 text-black-50"></i>
+                            Henüz hiçbir personel seçim yapmamış.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

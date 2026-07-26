@@ -1,0 +1,162 @@
+﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.Food>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Yemek Kataloğu";
+    var categories = ViewBag.Categories as Dictionary<int, string>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark m-0">Yemek Kataloğu</h3>
+        <p class="text-muted small m-0">Menülere atanabilecek tüm yemeklerin listesi.</p>
+    </div>
+    <a href="@Url.Action("AddFood", "Food")"
+       class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
+       data-title="Yeni Yemek Tanımla"
+       style="border-radius:8px;">
+        <i class="fa-solid fa-plus me-2"></i>Yeni Yemek Tanımla
+    </a>
+</div>
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
+    <div class="card-body py-3">
+        <div class="row g-3 align-items-end">
+           
+            <div class="col-md-5">
+                <label class="form-label fw-semibold small">Arama</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white" style="border-radius:8px 0 0 8px;">
+                        <i class="fa-solid fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="searchInput" class="form-control py-2"
+                           placeholder="Yemek adı, içindekiler, açıklama veya alerjen..."
+                           value="@(ViewBag.Search ?? "")" style="border-radius:0 8px 8px 0;">
+                </div>
+            </div>
+
+        
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small">Kategoriye Göre</label>
+                <select id="categoryFilter" class="form-select py-2" style="border-radius:8px;">
+                    <option value="">— Tüm Kategoriler —</option>
+                    @if (categories != null)
+                    {
+                        foreach (var cat in categories)
+                        {
+                            bool selected = (ViewBag.SelectedCategoryId != null && (int)ViewBag.SelectedCategoryId == cat.Key);
+                            <option value="@cat.Key" @(selected ? "selected" : "")>@cat.Value</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tableContainer" data-refresh-url="@Url.Action("FoodManagement", "Food")">
+    @Html.Partial("_FoodList", Model)
+</div>
+
+@section scripts {
+    <script>
+        $(function () {
+      
+            function applyFilters() {
+                var search = $('#searchInput').val();
+                var categoryId = $('#categoryFilter').val();
+
+                $.get('@Url.Action("FoodManagement", "Food")', {
+                    search: search,
+                    categoryId: categoryId || null
+                }, function (html) {
+                    $('#tableContainer').html(html);
+                });
+            }
+
+          
+            var searchTimer;
+            $('#searchInput').on('keyup', function () {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(applyFilters, 400);
+            });
+
+          
+            $('#categoryFilter').on('change', applyFilters);
+
+            
+            $(document).on('click', '.btn-delete-food', function (e) {
+                e.preventDefault();
+                var form = $(this).closest('form');
+                var foodName = $(this).data('name');
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "'" + foodName + "' yemeğini silmek (pasife almak) istediğinize emin misiniz?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'Vazgeç'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: form.attr('action'),
+                            type: 'POST',
+                            data: form.serialize(),
+                            success: function (response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    applyFilters(); 
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function () {
+                                toastr.error('Silme işlemi sırasında hata oluştu.');
+                            }
+                        });
+                    }
+                });
+            });
+
+          
+            $(document).on('click', '.btn-toggle-status', function (e) {
+                e.preventDefault();
+                var form = $(this).closest('form');
+                var currentStatus = $(this).find('.badge').text().trim();
+                var newStatus = currentStatus === 'Aktif' ? 'pasif' : 'aktif';
+
+                Swal.fire({
+                    title: 'Durumu Değiştir',
+                    text: "Bu yemeği " + newStatus + " hale getirmek istediğinize emin misiniz?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3b82f6',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Evet, Değiştir',
+                    cancelButtonText: 'Vazgeç'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: form.attr('action'),
+                            type: 'POST',
+                            data: form.serialize(),
+                            success: function (response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    applyFilters(); 
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function () {
+                                toastr.error('Durum değiştirilirken hata oluştu.');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

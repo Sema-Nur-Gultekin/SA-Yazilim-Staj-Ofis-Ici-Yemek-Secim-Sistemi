@@ -1,0 +1,132 @@
+﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Kategori Yönetimi";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark m-0">Kategori Yönetimi</h3>
+        <p class="text-muted small m-0">Yemekleri gruplandırmak için kullanılan şirket kategorileriniz.</p>
+    </div>
+    <a href="@Url.Action("AddCategory", "Category")"
+       class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
+       data-title="Yeni Kategori Ekle"
+       style="border-radius:8px;">
+        <i class="fa-solid fa-plus me-2"></i>Yeni Kategori Ekle
+    </a>
+</div>
+
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
+    <div class="card-body py-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small">Arama</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white" style="border-radius:8px 0 0 8px;">
+                        <i class="fa-solid fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="searchInput" class="form-control py-2" placeholder="Kategori adı veya açıklama..."
+                           value="@(ViewBag.Search ?? "")" style="border-radius:0 8px 8px 0;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tableContainer" data-refresh-url="@Url.Action("CategoryManagement", "Category")">
+    @Html.Partial("_CategoryList", Model)
+</div>
+
+@section scripts {
+    <script>
+        $(function () {
+            var searchTimer;
+            $('#searchInput').on('keyup', function () {
+                clearTimeout(searchTimer);
+                var term = $(this).val();
+                searchTimer = setTimeout(function () {
+                    $.get('@Url.Action("CategoryManagement", "Category")', { search: term }, function (html) {
+                        $('#tableContainer').html(html);
+                    });
+                }, 400);
+            });
+
+        
+            $(document).on('click', '.btn-delete-category', function (e) {
+                e.preventDefault();
+                var form = $(this).closest('form');
+                var categoryName = $(this).data('name');
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "'" + categoryName + "' kategorisini silmek (pasife almak) istediğinize emin misiniz?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'Vazgeç'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: form.attr('action'),
+                            type: 'POST',
+                            data: form.serialize(),
+                            success: function (response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    AjaxModal.refreshTable();
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function () {
+                                toastr.error('Silme işlemi sırasında hata oluştu.');
+                            }
+                        });
+                    }
+                });
+            });
+
+            
+            $(document).on('click', '.btn-toggle-status', function (e) {
+                e.preventDefault();
+                var form = $(this).closest('form');
+                var currentStatus = $(this).find('.badge').text().trim();
+                var newStatus = currentStatus === 'Aktif' ? 'pasif' : 'aktif';
+
+                Swal.fire({
+                    title: 'Durumu Değiştir',
+                    text: "Bu kategoriyi " + newStatus + " hale getirmek istediğinize emin misiniz?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3b82f6',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Evet, Değiştir',
+                    cancelButtonText: 'Vazgeç'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: form.attr('action'),
+                            type: 'POST',
+                            data: form.serialize(),
+                            success: function (response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    AjaxModal.refreshTable();
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function () {
+                                toastr.error('Durum değiştirilirken hata oluştu.');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

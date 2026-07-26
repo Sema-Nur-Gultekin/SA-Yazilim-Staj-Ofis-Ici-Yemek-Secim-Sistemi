@@ -1,0 +1,24 @@
+﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.RecipeIngredient>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Reçete Yönetimi";
+    var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
+    var stockNames = ViewBag.StockNames as Dictionary<int, string>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark m-0">Reçete Yönetimi</h3>
+        <p class="text-muted small m-0">Yemeklerin içerik ve malzeme reçetelerini tanımlayın.</p>
+    </div>
+    <a href="@Url.Action("AddRecipe", "Recipe")"
+       class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
+       data-title="Yeni Reçete Ekle"
+       style="border-radius:8px;">
+        <i class="fa-solid fa-plus me-2"></i>Yeni Reçete Ekle
+    </a>
+</div>
+
+<div id="tableContainer" data-refresh-url="@Url.Action("RecipeManagement", "Recipe")">
+    @Html.Partial("_RecipeList", Model)
+</div>

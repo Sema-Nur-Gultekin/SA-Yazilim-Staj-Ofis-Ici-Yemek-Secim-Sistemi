@@ -1,0 +1,372 @@
+﻿@model ofis_ici_yemek_secim_sistemi.Controllers.MenuController.EditMenuViewModel
+@{
+    var categories = ViewBag.Categories as List<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>;
+    var foods = ViewBag.Foods as List<ofis_ici_yemek_secim_sistemi.Models.Food>;
+}
+
+<style>
+    .meal-type-radio-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .meal-type-radio {
+        flex: 1;
+        text-align: center;
+    }
+
+        .meal-type-radio input {
+            display: none;
+        }
+
+        .meal-type-radio label {
+            display: block;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+            .meal-type-radio label:hover {
+                border-color: #93c5fd;
+                background: #f8fafc;
+            }
+
+        .meal-type-radio input:checked + label {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            color: #3b82f6;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
+        }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.25rem;
+        margin-top: 1rem;
+    }
+
+    .category-card {
+        background: white;
+        border: 1px solid #f1f5f9;
+        border-radius: 16px;
+        padding: 1.25rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .category-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+            border-color: #e2e8f0;
+        }
+
+    .category-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px dashed #e2e8f0;
+    }
+
+    .category-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #0f172a;
+    }
+
+    .btn-add-food {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: #3b82f6;
+        color: white;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+      
+        padding: 0;
+        padding-bottom: 3px;
+        line-height: 1;
+    }
+
+        .btn-add-food:hover {
+            background: #2563eb;
+            transform: scale(1.1);
+        }
+
+    .selected-food-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .selected-food-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #334155;
+        transition: background 0.2s;
+    }
+
+        .selected-food-item:hover {
+            background: #f1f5f9;
+        }
+
+    .btn-remove-food {
+        background: #fee2e2;
+        border: none;
+        color: #ef4444;
+        cursor: pointer;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        padding: 0;
+        line-height: 0;
+        transition: all 0.2s;
+    }
+
+        .btn-remove-food:hover {
+            background: #fecaca;
+            color: #dc2626;
+            transform: rotate(90deg);
+        }
+
+    .locked-item {
+        background: #fffbeb !important;
+        border-left: 4px solid #f59e0b;
+        color: #b45309;
+    }
+
+        .locked-item .btn-remove-food {
+            display: none;
+        }
+</style>
+
+<form id="editMenuForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="originalDate" value="@Model.Date.ToString("yyyy-MM-dd")" />
+    <input type="hidden" name="originalMealType" value="@Model.MealType" />
+
+    <div class="mb-4">
+        <label class="form-label fw-bold text-dark">Tarih</label>
+        <input type="date" id="menuDate" class="form-control py-2 shadow-sm border-0 bg-light" value="@Model.Date.ToString("yyyy-MM-dd")" required style="border-radius:12px;" />
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label fw-bold text-dark">Öğün</label>
+        <div class="meal-type-radio-group">
+            <div class="meal-type-radio">
+                <input type="radio" name="MealType" value="Sabah" id="mealSabah" @(Model.MealType == "Sabah" ? "checked" : "") />
+                <label for="mealSabah">Sabah</label>
+            </div>
+            <div class="meal-type-radio">
+                <input type="radio" name="MealType" value="Öğle" id="mealOgle" @(Model.MealType == "Öğle" ? "checked" : "") />
+                <label for="mealOgle">Öğle</label>
+            </div>
+            <div class="meal-type-radio">
+                <input type="radio" name="MealType" value="Akşam" id="mealAksam" @(Model.MealType == "Akşam" ? "checked" : "") />
+                <label for="mealAksam">Akşam</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="category-grid mb-4">
+        @foreach (var cat in categories)
+        {
+            var existingInCat = Model.ExistingItems.Where(i => foods.Any(f => f.ID == i.FoodID && f.CategoryID == cat.ID)).ToList();
+            <div class="category-card" data-category-id="@cat.ID">
+                <div class="category-header">
+                    <span class="category-name">@cat.Name</span>
+                    <button type="button" class="btn-add-food" data-category-id="@cat.ID" data-category-name="@cat.Name" title="Yemek Ekle">+</button>
+                </div>
+                <ul class="selected-food-list" data-category-id="@cat.ID">
+                    @foreach (var item in existingInCat)
+                    {
+                        <li class="selected-food-item shadow-sm @(item.IsLocked ? "locked-item" : "")" data-food-id="@item.FoodID">
+                            <span>@item.FoodName @(item.IsLocked ? " 🔒" : "")</span>
+                            @if (!item.IsLocked)
+                            {
+                                <button type="button" class="btn-remove-food" title="Kaldır"><i class="fa-solid fa-xmark"></i></button>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+        <button type="button" class="btn btn-light px-4 py-2 fw-semibold rounded-3" data-bs-dismiss="modal">İptal</button>
+        <button type="button" id="updateMenuBtn" class="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-3">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Güncelle
+        </button>
+    </div>
+</form>
+
+<script>
+    $(function () {
+        var allFoods = @Html.Raw(Json.Encode(foods.Select(f => new { id = f.ID, name = f.Name, categoryId = f.CategoryID ?? 0 })));
+
+        $(document).on('click', '.btn-add-food', function () {
+            var catId = $(this).data('category-id');
+            var catName = $(this).data('category-name');
+            var catFoods = allFoods.filter(function (f) { return String(f.categoryId) === String(catId); });
+
+            if (catFoods.length === 0) {
+                Swal.fire({
+                    title: 'Bilgi',
+                    text: 'Bu kategoride yemek bulunmamaktadır.',
+                    icon: 'info',
+                    buttonsStyling: false,
+                    customClass: { confirmButton: 'btn btn-info text-white px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
+                });
+                return;
+            }
+
+            var selectedFoodIds = [];
+            $('.selected-food-list li').each(function () {
+                selectedFoodIds.push(parseInt($(this).data('food-id')));
+            });
+
+            var availableFoods = catFoods.filter(function (f) { return !selectedFoodIds.includes(f.id); });
+
+            if (availableFoods.length === 0) {
+                Swal.fire({
+                    title: 'Bilgi',
+                    text: 'Bu yemek zaten menüye eklenmiş.',
+                    icon: 'info',
+                    buttonsStyling: false,
+                    customClass: { confirmButton: 'btn btn-info text-white px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
+                });
+                return;
+            }
+
+            var options = {};
+            availableFoods.forEach(function (f) {
+                options[f.id] = f.name;
+            });
+
+            Swal.fire({
+                title: '<span class="fw-bold fs-5">' + catName + ' Seçimi</span>',
+                html: '<div class="text-muted small mb-2">Menüye dahil etmek istediğiniz yemeği seçin.</div>',
+                input: 'select',
+                inputOptions: options,
+                inputPlaceholder: '— Bir yemek seçin —',
+                showCancelButton: true,
+                confirmButtonText: 'Ekle',
+                cancelButtonText: 'Vazgeç',
+                buttonsStyling: false,
+                customClass: {
+                    popup: 'rounded-4 shadow-lg border-0',
+                    input: 'form-select form-select-md mb-4 mt-2 mx-auto rounded-3 shadow-sm bg-light text-dark w-75',
+                    confirmButton: 'btn btn-primary px-4 py-2 mx-2 fw-semibold rounded-3 shadow-sm',
+                    cancelButton: 'btn btn-light px-4 py-2 mx-2 fw-semibold rounded-3 text-secondary'
+                }
+            }).then(function (result) {
+                if (result.isConfirmed && result.value) {
+                    var selectedFoodId = result.value;
+                    var selectedFoodName = availableFoods.find(f => f.id == selectedFoodId).name;
+                    var list = $('.selected-food-list[data-category-id="' + catId + '"]');
+                    list.append('<li class="selected-food-item shadow-sm" data-food-id="' + selectedFoodId + '">' +
+                        '<span>' + selectedFoodName + '</span>' +
+                        '<button type="button" class="btn-remove-food" title="Kaldır"><i class="fa-solid fa-xmark"></i></button>' +
+                    '</li>');
+                }
+            });
+        });
+
+        $(document).on('click', '.btn-remove-food', function () {
+            $(this).closest('li').remove();
+        });
+
+        $('#updateMenuBtn').click(function () {
+            var date = $('#menuDate').val();
+            var mealType = $('input[name="MealType"]:checked').val();
+            var foodIds = [];
+            $('.selected-food-list li').each(function () {
+                foodIds.push(parseInt($(this).data('food-id')));
+            });
+
+            if (!date || !mealType) {
+                Swal.fire({
+                    title: 'Uyarı',
+                    text: 'Tarih ve öğün seçimi zorunludur.',
+                    icon: 'warning',
+                    buttonsStyling: false,
+                    customClass: { confirmButton: 'btn btn-warning text-dark px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
+                });
+                return;
+            }
+            if (foodIds.length === 0) {
+                Swal.fire({
+                    title: 'Uyarı',
+                    text: 'En az bir yemek eklemelisiniz.',
+                    icon: 'warning',
+                    buttonsStyling: false,
+                    customClass: { confirmButton: 'btn btn-warning text-dark px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
+                });
+                return;
+            }
+
+            var token = $('input[name="__RequestVerificationToken"]').val();
+            $.ajax({
+                url: '@Url.Action("EditMenu", "Menu")',
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: token,
+                    Date: date,
+                    MealType: mealType,
+                    FoodIDs: foodIds
+                },
+                success: function (response) {
+                    if (response.success) {
+                        AjaxModal.modal.hide();
+                        toastr.success(response.message);
+                        AjaxModal.refreshTable();
+                    } else {
+                        Swal.fire({
+                            title: 'Hata',
+                            text: response.message,
+                            icon: 'error',
+                            buttonsStyling: false,
+                            customClass: { confirmButton: 'btn btn-danger px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        title: 'Hata',
+                        text: 'Sunucu ile bağlantı kurulamadı.',
+                        icon: 'error',
+                        buttonsStyling: false,
+                        customClass: { confirmButton: 'btn btn-danger px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
+                    });
+                }
+            });
+        });
+    });
+</script>

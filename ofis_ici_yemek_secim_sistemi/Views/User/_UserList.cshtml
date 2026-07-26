@@ -1,0 +1,69 @@
+﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.User>
+@{
+    string currentUserEmail = User.Identity.Name;
+}
+
+<div class="card shadow-sm border-0" style="border-radius:12px;">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="padding:1rem 1.5rem;">Ad Soyad</th>
+                    <th>E-posta</th>
+                    <th>Rol</th>
+                    <th>Departman</th>
+                    <th>Lokasyon</th>
+                    <th style="min-width:80px;">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var user in Model)
+                    {
+                        bool isCurrentUser = (user.Email == currentUserEmail);
+                        <tr>
+                            <td style="padding:1rem 1.5rem;" class="fw-semibold text-dark">@user.Name</td>
+                            <td>@user.Email</td>
+                            <td>
+                                <span class="badge @(user.Role == "Admin" ? "bg-primary-subtle text-primary" : "bg-secondary-subtle text-secondary") px-2 py-1" style="border-radius:6px;">
+                                    @user.Role
+                                </span>
+                            </td>
+                            <td>@(string.IsNullOrEmpty(user.Department) ? "—" : user.Department)</td>
+                            <td>@(string.IsNullOrEmpty(user.Location) ? "—" : user.Location)</td>
+                            <td>
+                                @if (!isCurrentUser)
+                                {
+                                    using (Html.BeginForm("DeleteUser", "User", new { id = user.ID }, FormMethod.Post, new { @class = "d-inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger btn-delete-user"
+                                                data-name="@user.Name"
+                                                title="Kullanıcıyı Sil">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">(Siz)</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-users d-block fs-1 mb-2 text-black-50"></i>
+                            Şirketinize kayıtlı kullanıcı bulunmamaktadır.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

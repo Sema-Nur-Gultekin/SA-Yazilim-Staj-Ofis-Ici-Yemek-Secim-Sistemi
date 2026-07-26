@@ -1,0 +1,111 @@
+﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.FoodRating>
+@{
+    var userNames = ViewBag.UserNames as Dictionary<int, string>;
+    var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
+    var menuDict = ViewBag.MenuDict as Dictionary<int, (DateTime Date, string MealType, int FoodID)>;
+
+    var grouped = Model
+        .Where(r => menuDict.ContainsKey(r.MenuItemID))
+        .GroupBy(r => new
+        {
+            r.UserID,
+            Date = menuDict[r.MenuItemID].Date,
+            MealType = menuDict[r.MenuItemID].MealType
+        })
+        .OrderByDescending(g => g.Key.Date)
+        .ThenBy(g => userNames.ContainsKey(g.Key.UserID) ? userNames[g.Key.UserID] : "")
+        .ToList();
+}
+
+<style>
+    tr:hover td:not([rowspan]) {
+        background-color: #f1f5f9 !important;
+        transition: background-color 0.15s ease;
+    }
+</style>
+
+<div class="card shadow-sm border-0" style="border-radius:12px;">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+           
+            <thead class="table-light">
+                <tr>
+                    <th style="padding:1rem 1.5rem;">Tarih</th>
+                    <th>Öğün</th>
+                    <th>Personel</th>
+                    <th>Yemek</th>
+                    <th>Puan</th>
+                    <th>Lezzet</th>
+                    <th>Sunum</th>
+                    <th>Doyuruculuk</th>
+                    <th>Yorum</th>
+                    <th style="min-width:80px;">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (grouped.Any())
+                {
+                    foreach (var group in grouped)
+                    {
+                        var ratings = group.ToList();
+                        int rowCount = ratings.Count;
+                        bool firstRow = true;
+
+                        foreach (var rating in ratings)
+                        {
+                            string foodName = menuDict.ContainsKey(rating.MenuItemID) && foodNames.ContainsKey(menuDict[rating.MenuItemID].FoodID)
+                                ? foodNames[menuDict[rating.MenuItemID].FoodID] : "?";
+                            string userName = userNames.ContainsKey(rating.UserID) ? userNames[rating.UserID] : "Bilinmeyen";
+
+                            <tr>
+                                @if (firstRow)
+                                {
+                                    <td style="padding:1rem 1.5rem; background-color: inherit;" class="fw-semibold" rowspan="@rowCount">
+                                        @group.Key.Date.ToString("dd.MM.yyyy")
+                                    </td>
+                                    <td style="background-color: inherit;" rowspan="@rowCount">
+                                        <span class="badge bg-secondary-subtle text-secondary px-2 py-1" style="border-radius:6px;">
+                                            @group.Key.MealType
+                                        </span>
+                                    </td>
+                                    <td style="background-color: inherit;" rowspan="@rowCount">@userName</td>
+                                }
+                                <td>@foodName</td>
+                                <td>
+                                    <span class="badge bg-warning-subtle text-warning px-2 py-1" style="border-radius:6px;">
+                                        @rating.OverallRating / 5
+                                    </span>
+                                </td>
+                                <td>@(rating.TasteRating?.ToString() ?? "—")</td>
+                                <td>@(rating.PresentationRating?.ToString() ?? "—")</td>
+                                <td>@(rating.SatietyRating?.ToString() ?? "—")</td>
+                                <td class="text-muted small">@(string.IsNullOrEmpty(rating.Comment) ? "—" : rating.Comment)</td>
+                                <td>
+                                    @using (Html.BeginForm("DeleteRating", "Rating", new { id = rating.ID }, FormMethod.Post, new { @class = "d-inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger btn-delete-rating"
+                                                title="Değerlendirmeyi Sil">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                            firstRow = false;
+                        }
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-star-half-stroke d-block fs-1 mb-2 text-black-50"></i>
+                            Henüz hiç değerlendirme yapılmamış.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
