@@ -1,14 +1,20 @@
-﻿@model List<ofis_ici_yemek_secim_sistemi.Models.MenuItem>
+@model List<ofis_ici_yemek_secim_sistemi.Models.MenuItem>
 @{
     ViewBag.Title = "Haftalık Menü";
 
     var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
+    var foodImages = ViewBag.FoodImages as Dictionary<int, string>;
+    var foodAllergens = ViewBag.FoodAllergens as Dictionary<int, string>;
+    var selectionCounts = ViewBag.SelectionCounts as Dictionary<int, int>;
     var foodCategories = ViewBag.FoodCategories as Dictionary<int, int>;
     var categoryNames = ViewBag.CategoryNames as Dictionary<int, string>;
     var orderedCategories = ViewBag.OrderedCategories as List<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>;
     var selectedIds = ViewBag.SelectedIds as HashSet<int>;
     var ratings = ViewBag.Ratings as Dictionary<int, ofis_ici_yemek_secim_sistemi.Models.FoodRating>;
     DateTime today = ViewBag.Today != null ? (DateTime)ViewBag.Today : DateTime.Now.Date;
+
+  
+    var mealOrderMap = ViewBag.MealOrderMap as Dictionary<string, int> ?? new Dictionary<string, int>();
 
     var dateGroups = Model
         .GroupBy(m => m.Date)
@@ -17,7 +23,7 @@
         {
             Date = g.Key,
             MealGroups = g.GroupBy(m => m.MealType)
-                          .OrderBy(mg => mg.Key == "Sabah" ? 0 : mg.Key == "Öğle" ? 1 : 2)
+                          .OrderBy(mg => mealOrderMap.ContainsKey(mg.Key) ? mealOrderMap[mg.Key] : int.MaxValue)
                           .Select(mg => new
                           {
                               MealType = mg.Key,
@@ -38,25 +44,54 @@
         margin-top: 2rem;
     }
 
+    
+    @@media (min-width: 1200px) {
+        .menu-week-grid {
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.25rem;
+        }
+    }
+
+    @@media (min-width: 900px) and (max-width: 1199.98px) {
+        .menu-week-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+    }
+
+    @@media (min-width: 577px) and (max-width: 899.98px) {
+        .menu-week-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+    }
+
     .day-card {
         background: white;
-        border-radius: 16px;
+        border-radius: 14px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         overflow: hidden;
+        min-width: 0; 
     }
 
     .day-header {
         background: linear-gradient(135deg, #3b82f6, #2563eb);
         color: white;
-        padding: 1rem;
+        padding: 0.75rem 0.9rem;
         font-weight: 600;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
+        gap: 0.2rem;
+    }
+
+    .day-header .fw-bold {
+        font-size: 0.95rem;
     }
 
     .day-name {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         opacity: 0.9;
     }
 
@@ -101,19 +136,36 @@
     .meal-item {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         padding: 0.4rem 0;
+        gap: 0.5rem;
     }
 
     .food-name {
         font-weight: 500;
         color: #1e293b;
+        flex: 1 1 auto;
+        min-width: 0;
+        word-break: break-word;
+        padding-top: 0.15rem; 
+    }
+
+   
+    .food-thumb {
+        width: 28px;
+        height: 28px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        flex-shrink: 0;
     }
 
     .btn-group-action {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.35rem;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
     }
 
     .btn-select {
@@ -130,6 +182,14 @@
         .btn-select:hover {
             border-color: #3b82f6;
             color: #3b82f6;
+        }
+
+        .btn-select:disabled {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #ef4444;
+            cursor: not-allowed;
+            opacity: 0.85;
         }
 
         .btn-select.selected {
@@ -199,12 +259,70 @@
         font-size: 0.85rem;
         resize: vertical;
     }
+
+    
+    .meal-section {
+        padding: 0.5rem 0.9rem 0.7rem;
+    }
+
+    .meal-title {
+        font-size: 0.85rem;
+        padding: 0.45rem 0.65rem;
+        margin: 0.5rem 0 0.65rem;
+    }
+
+    .category-title {
+        font-size: 0.75rem;
+    }
+
+    .meal-item {
+        padding: 0.4rem 0;
+        gap: 0.5rem;
+    }
+
+    .food-name {
+        font-size: 0.92rem;
+    }
+
+    .btn-select, .btn-rate {
+        padding: 0.28rem 0.7rem;
+        font-size: 0.75rem;
+    }
+
+    @@media (max-width: 480px) {
+        .menu-week-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+    }
 </style>
 
 <div class="container-fluid px-0">
+    @{
+        bool hasMenuToday = ViewBag.HasMenuToday != null && (bool)ViewBag.HasMenuToday;
+        bool hasSelectedToday = ViewBag.HasSelectedToday != null && (bool)ViewBag.HasSelectedToday;
+    }
+   
+    @if (hasMenuToday && !hasSelectedToday)
+    {
+        <div id="noSelectionBanner"
+             class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-sm no-print"
+             style="border-radius:10px;">
+            <div>
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <strong>Henüz yemek seçmediniz.</strong>
+                Bugünün menüsünden seçim yapmayı unutmayın.
+            </div>
+            <a href="#todayMenuCard" class="btn btn-sm btn-warning fw-semibold">Bugünün Menüsüne Git</a>
+        </div>
+    }
+
     <div class="text-center mb-4">
         <h2 class="fw-bold">Haftalık Yemek Menüsü</h2>
         <p class="text-muted">Her kategoriden bir yemek seçebilir, seçiminizi değiştirebilir ve yemekleri değerlendirebilirsiniz.</p>
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-print mt-2 no-print" onclick="printPage()" title="Haftalık menüyü yazdır">
+            <i class="fa-solid fa-print"></i> Yazdır
+        </button>
     </div>
 
     @if (!dateGroups.Any())
@@ -221,7 +339,7 @@
             {
                 bool isFutureOrToday = day.Date >= today;
 
-                <div class="day-card">
+                <div class="day-card" id="@(day.Date == today ? "todayMenuCard" : null)">
                     <div class="day-header">
                         <span>@day.Date.ToString("dd MMMM yyyy")</span>
                         <span class="day-name">@day.Date.ToString("dddd")</span>
@@ -259,15 +377,56 @@
                                             @foreach (var item in mealsInCat)
                                             {
                                                 string foodName = foodNames != null && foodNames.ContainsKey(item.FoodID) ? foodNames[item.FoodID] : "?";
+                                                string foodImage = foodImages != null && foodImages.ContainsKey(item.FoodID) ? foodImages[item.FoodID] : null;
+                                                string allergenInfo = foodAllergens != null && foodAllergens.ContainsKey(item.FoodID) ? foodAllergens[item.FoodID] : null;
                                                 bool isSelected = selectedIds != null && selectedIds.Contains(item.ID);
-                                                bool canRate = isSelected && day.Date <= today;
+
+                                                
+                                                int? capacity = item.PlannedPortion;
+                                                int currentCount = selectionCounts != null && selectionCounts.ContainsKey(item.ID) ? selectionCounts[item.ID] : 0;
+                                                bool isFull = capacity.HasValue && currentCount >= capacity.Value && !isSelected;
+
+                                                
+                                                bool canRate = isSelected && day.Date < today;
+
                                                 var currentRating = ratings != null && ratings.ContainsKey(item.ID) ? ratings[item.ID] : null;
                                                 int overallRating = currentRating?.OverallRating ?? 0;
 
                                                 <div class="meal-item" data-menuid="@item.ID">
-                                                    <span class="food-name">@foodName</span>
+                                                    <div class="d-flex align-items-start gap-2" style="min-width:0;flex:1 1 auto;">
+                                                        @if (!string.IsNullOrWhiteSpace(foodImage))
+                                                        {
+                                                            <img src="@Url.Content(foodImage)" alt="@foodName" class="food-thumb" />
+                                                        }
+                                                        <div style="min-width:0;">
+                                                            <span class="food-name">@foodName</span>
+                                                            @if (!string.IsNullOrWhiteSpace(allergenInfo))
+                                                            {
+                                                                <div class="small text-warning-emphasis" style="font-size:0.68rem;">
+                                                                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>Alerjenler:</strong> @allergenInfo
+                                                                </div>
+                                                            }
+                                                            @if (capacity.HasValue)
+                                                            {
+                                                                <div class="small @(isFull ? "text-danger fw-semibold" : "text-muted")" style="font-size:0.68rem;">
+                                                                    @if (isFull)
+                                                                    {
+                                                                        <span><i class="fa-solid fa-ban"></i> Kontenjan Doldu</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span>@currentCount / @capacity Seçildi</span>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
                                                     <div class="btn-group-action">
-                                                        @if (isFutureOrToday)
+                                                        @if (isFutureOrToday && isFull)
+                                                        {
+                                                            <button class="btn-select" disabled title="Kontenjan dolmuştur">Dolu</button>
+                                                        }
+                                                        else if (isFutureOrToday)
                                                         {
                                                             <button class="btn-select @(isSelected ? "selected" : "")" data-id="@item.ID" data-name="@foodName">
                                                                 @(isSelected ? "Seçildi" : "Seç")
@@ -288,6 +447,12 @@
                                                         {
                                                             <span class="rating-badge">
                                                                 <i class="fa-solid fa-star"></i> @overallRating/5
+                                                            </span>
+                                                        }
+                                                        else if (isSelected && day.Date >= today)
+                                                        {
+                                                            <span class="text-muted small" title="Değerlendirme yalnızca bu günün tamamlanmasının ardından (en az 1 gün sonra) yapılabilir.">
+                                                                <i class="fa-regular fa-clock"></i>
                                                             </span>
                                                         }
                                                     </div>
@@ -374,6 +539,7 @@
         var csrfToken = $('input[name="__RequestVerificationToken"]').val();
         var ratingModal = new bootstrap.Modal(document.getElementById('ratingModal'));
 
+      
         $(document).on('click', '.btn-select', function () {
             var $btn = $(this);
             var menuItemId = $btn.data('id');
@@ -415,6 +581,7 @@
             });
         });
 
+
         $(document).on('click', '.rate-btn', function () {
             var $btn = $(this);
             var menuItemId = $btn.data('id');
@@ -446,7 +613,7 @@
             });
         });
 
-       
+  
         $('#saveRatingBtn').click(function () {
             var menuItemId = $('#rateMenuItemId').val();
             var tasteRating = $('input[name="tasteRating"]:checked').val();

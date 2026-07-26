@@ -11,6 +11,7 @@ namespace ofis_ici_yemek_secim_sistemi.Data
         {
         }
 
+       
         public DbSet<Company> Companies { get; set; }
 
         public DbSet<User> Users { get; set; }
@@ -18,14 +19,26 @@ namespace ofis_ici_yemek_secim_sistemi.Data
         public DbSet<FoodCategory> FoodCategories { get; set; }
         public DbSet<Food> Foods { get; set; }
 
+       
+        public DbSet<MealType> MealTypes { get; set; }
+
         public DbSet<MenuItem> MenuItems { get; set; }
         public DbSet<Selection> Selections { get; set; }
 
+       
         public DbSet<FoodRating> FoodRatings { get; set; }
 
+        public DbSet<ActivityLog> ActivityLogs { get; set; }
+
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
+        
         public DbSet<ProductionRecord> ProductionRecords { get; set; }
         public DbSet<StockItem> StockItems { get; set; }
         public DbSet<RecipeIngredient> RecipeIngredients { get; set; }
+
+       
+        public DbSet<StockMovement> StockMovements { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {

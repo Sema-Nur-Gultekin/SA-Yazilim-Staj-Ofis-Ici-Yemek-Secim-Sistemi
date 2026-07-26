@@ -1,4 +1,5 @@
-﻿using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +12,8 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
         [NonAction]
         public override ActionResult Index() => null;
 
-  
-        public ActionResult RatingManagement(DateTime? date = null, string mealType = "", string search = "")
+
+        public ActionResult RatingManagement(DateTime? dateFrom = null, DateTime? dateTo = null, string mealType = "", string search = "")
         {
             int companyId = GetCurrentUserCompanyId();
 
@@ -36,12 +37,19 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 .Where(f => foodIds.Contains(f.ID))
                 .ToDictionary(f => f.ID, f => f.Name);
 
-         
-            if (date.HasValue)
+     
+            if (dateFrom.HasValue)
             {
                 ratings = ratings.Where(r =>
                     menuItems.ContainsKey(r.MenuItemID) &&
-                    menuItems[r.MenuItemID].Date == date.Value
+                    menuItems[r.MenuItemID].Date >= dateFrom.Value
+                ).ToList();
+            }
+            if (dateTo.HasValue)
+            {
+                ratings = ratings.Where(r =>
+                    menuItems.ContainsKey(r.MenuItemID) &&
+                    menuItems[r.MenuItemID].Date <= dateTo.Value
                 ).ToList();
             }
 
@@ -69,18 +77,25 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             ViewBag.FoodNames = foodNames;
             ViewBag.MenuDict = menuItems;
 
+   
+            ViewBag.MealTypes = _context.MealTypes
+                .Where(m => m.CompanyID == companyId && m.IsActive)
+                .OrderBy(m => m.DisplayOrder.HasValue ? 0 : 1)
+                .ThenBy(m => m.DisplayOrder)
+                .ToList();
+
             if (Request.IsAjaxRequest())
             {
                 return PartialView("_RatingList", ratings);
             }
 
-            ViewBag.Date = date;
+            ViewBag.DateFrom = dateFrom;
+            ViewBag.DateTo = dateTo;
             ViewBag.MealType = mealType;
             ViewBag.Search = search;
 
             return View(ratings);
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -94,6 +109,7 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = "Değerlendirme bulunamadı." });
 
             _context.FoodRatings.Remove(rating);
+            ActivityLogger.Log(_context, companyId, GetCurrentUserId(), "Değerlendirme Silindi", id);
             _context.SaveChanges();
 
             return Json(new { success = true, message = "Değerlendirme başarıyla silindi." });

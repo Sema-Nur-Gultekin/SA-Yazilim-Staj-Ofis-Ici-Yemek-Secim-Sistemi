@@ -1,30 +1,46 @@
-﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.FoodRating>
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.FoodRating>
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewBag.Title = "Yemek Değerlendirmeleri";
+    var mealTypes = ViewBag.MealTypes as List<ofis_ici_yemek_secim_sistemi.Models.MealType>;
+    string dateFromValue = ViewBag.DateFrom != null ? ((DateTime)ViewBag.DateFrom).ToString("yyyy-MM-dd") : "";
+    string dateToValue = ViewBag.DateTo != null ? ((DateTime)ViewBag.DateTo).ToString("yyyy-MM-dd") : "";
 }
 
-<div class="mb-4">
-    <h3 class="fw-bold text-dark m-0">Yemek Değerlendirmeleri</h3>
-    <p class="text-muted small m-0">Personelin yemekler hakkında verdiği puan ve yorumları inceleyin.</p>
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold text-dark m-0">Yemek Değerlendirmeleri</h3>
+        <p class="text-muted small m-0">Personelin yemekler hakkında verdiği puan ve yorumları inceleyin.</p>
+    </div>
+    <button type="button" class="btn btn-outline-secondary btn-print" onclick="printPage()" title="Listeyi yazdır">
+        <i class="fa-solid fa-print"></i> Yazdır
+    </button>
 </div>
+
 
 <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
     <div class="card-body py-3">
         <div class="row g-3 align-items-end">
-            <div class="col-md-2">
-                <label class="form-label fw-semibold small">Tarih</label>
-                <input type="date" id="dateFilter" class="form-control py-2"
-                       value="@(ViewBag.Date != null ? ((DateTime)ViewBag.Date).ToString("yyyy-MM-dd") : "")"
-                       style="border-radius:8px;" />
+            
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small">Tarih Aralığı</label>
+                <div class="date-range-group">
+                    <input type="date" id="dateFromFilter" class="form-control py-2" value="@dateFromValue" style="border-radius:8px;" />
+                    <span class="date-range-sep">—</span>
+                    <input type="date" id="dateToFilter" class="form-control py-2" value="@dateToValue" style="border-radius:8px;" />
+                </div>
             </div>
             <div class="col-md-2">
                 <label class="form-label fw-semibold small">Öğün</label>
                 <select id="mealTypeFilter" class="form-select py-2" style="border-radius:8px;">
                     <option value="">— Tümü —</option>
-                    <option value="Sabah" @(ViewBag.MealType == "Sabah" ? "selected" : "")>Sabah</option>
-                    <option value="Öğle" @(ViewBag.MealType == "Öğle" ? "selected" : "")>Öğle</option>
-                    <option value="Akşam" @(ViewBag.MealType == "Akşam" ? "selected" : "")>Akşam</option>
+                    @if (mealTypes != null)
+                    {
+                        foreach (var meal in mealTypes)
+                        {
+                            <option value="@meal.Name" @(ViewBag.MealType == meal.Name ? "selected" : "")>@meal.Name</option>
+                        }
+                    }
                 </select>
             </div>
             <div class="col-md-4">
@@ -49,21 +65,26 @@
 @section scripts {
     <script>
         $(function () {
+            initDataTable('#ratingTable');
+
             function applyFilters() {
-                var date = $('#dateFilter').val();
+                var dateFrom = $('#dateFromFilter').val();
+                var dateTo = $('#dateToFilter').val();
                 var mealType = $('#mealTypeFilter').val();
                 var search = $('#searchInput').val();
 
                 $.get('@Url.Action("RatingManagement", "Rating")', {
-                    date: date || null,
+                    dateFrom: dateFrom || null,
+                    dateTo: dateTo || null,
                     mealType: mealType || null,
                     search: search || null
                 }, function (html) {
                     $('#tableContainer').html(html);
+                    initDataTable('#ratingTable');
                 });
             }
 
-            $('#dateFilter, #mealTypeFilter').on('change', applyFilters);
+            $('#dateFromFilter, #dateToFilter, #mealTypeFilter').on('change', applyFilters);
 
             var searchTimer;
             $('#searchInput').on('keyup', function () {

@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Microsoft.TypeScript.MSBuild.6.0.3\build\Microsoft.TypeScript.MSBuild.props" Condition="Exists('..\packages\Microsoft.TypeScript.MSBuild.6.0.3\build\Microsoft.TypeScript.MSBuild.props')" />
   <Import Project="..\packages\EntityFramework.6.5.2\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.props')" />
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -173,6 +174,7 @@
     <Compile Include="Controllers\CategoryController.cs" />
     <Compile Include="Controllers\FoodController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\MealController.cs" />
     <Compile Include="Controllers\MenuController.cs" />
     <Compile Include="Controllers\ProductionController.cs" />
     <Compile Include="Controllers\RatingController.cs" />
@@ -191,18 +193,57 @@
     <Compile Include="Migrations\202606290802052_InitialCreate.Designer.cs">
       <DependentUpon>202606290802052_InitialCreate.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202607201457233_AddMealTypes.cs" />
+    <Compile Include="Migrations\202607201457233_AddMealTypes.Designer.cs">
+      <DependentUpon>202607201457233_AddMealTypes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202607211719087_AddActivityLogs.cs" />
+    <Compile Include="Migrations\202607211719087_AddActivityLogs.Designer.cs">
+      <DependentUpon>202607211719087_AddActivityLogs.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202607220934124_AddFoodImagePath.cs" />
+    <Compile Include="Migrations\202607220934124_AddFoodImagePath.Designer.cs">
+      <DependentUpon>202607220934124_AddFoodImagePath.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202607230958189_AddPasswordResetTokens.cs" />
+    <Compile Include="Migrations\202607230958189_AddPasswordResetTokens.Designer.cs">
+      <DependentUpon>202607230958189_AddPasswordResetTokens.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202607231015306_ActivateProductionStockRecipe.cs" />
+    <Compile Include="Migrations\202607231015306_ActivateProductionStockRecipe.Designer.cs">
+      <DependentUpon>202607231015306_ActivateProductionStockRecipe.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202607240845324_StockLedgerAndCategory.cs" />
+    <Compile Include="Migrations\202607240845324_StockLedgerAndCategory.Designer.cs">
+      <DependentUpon>202607240845324_StockLedgerAndCategory.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202607241919019_AddUserIsActive.cs" />
+    <Compile Include="Migrations\202607241919019_AddUserIsActive.Designer.cs">
+      <DependentUpon>202607241919019_AddUserIsActive.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202607250959473_RequireUserEmail.cs" />
+    <Compile Include="Migrations\202607250959473_RequireUserEmail.Designer.cs">
+      <DependentUpon>202607250959473_RequireUserEmail.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
+    <Compile Include="Models\ActivityLog.cs" />
     <Compile Include="Models\Company.cs" />
     <Compile Include="Models\Food.cs" />
     <Compile Include="Models\FoodCategory.cs" />
     <Compile Include="Models\FoodRating.cs" />
+    <Compile Include="Models\MealType.cs" />
     <Compile Include="Models\MenuItem.cs" />
+    <Compile Include="Models\PasswordResetToken.cs" />
     <Compile Include="Models\ProductionRecord.cs" />
     <Compile Include="Models\RecipeIngredient.cs" />
     <Compile Include="Models\Selection.cs" />
     <Compile Include="Models\StockItem.cs" />
+    <Compile Include="Models\StockMovement.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\ActivityLogger.cs" />
+    <Compile Include="Services\EmailService.cs" />
+    <Compile Include="Services\UnitHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap-grid.css" />
@@ -241,56 +282,65 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Scripts\modernizr-2.8.3.js" />
-    <Content Include="Web.config" />
-    <Content Include="Web.Debug.config">
-      <DependentUpon>Web.config</DependentUpon>
-    </Content>
-    <Content Include="Web.Release.config">
-      <DependentUpon>Web.config</DependentUpon>
-    </Content>
     <Content Include="Views\Account\AccessDenied.cshtml" />
-    <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Account\Register.cshtml" />
-    <Content Include="Views\Admin\Index.cshtml" />
+    <Content Include="Views\Category\_AddCategoryModal.cshtml" />
+    <Content Include="Views\Category\_EditCategoryModal.cshtml" />
+    <Content Include="Views\Shared\Error.cshtml" />
+    <Content Include="Views\User\_AddUserModal.cshtml" />
+    <Content Include="Views\Web.config" />
+    <Content Include="Views\_ViewStart.cshtml" />
+    <Content Include="Views\Meal\_AddMealModal.cshtml" />
+    <Content Include="Views\Meal\_EditMealModal.cshtml" />
+    <Content Include="Views\Category\CategoryManagement.cshtml" />
+    <Content Include="Views\Category\_CategoryList.cshtml" />
+    <Content Include="Views\Meal\MealManagement.cshtml" />
+    <Content Include="Views\Meal\_MealList.cshtml" />
+    <Content Include="Views\Menu\MenuManagement.cshtml" />
+    <Content Include="Views\Menu\_MenuList.cshtml" />
+    <Content Include="Views\Rating\RatingManagement.cshtml" />
+    <Content Include="Views\Report\DailyReport.cshtml" />
+    <Content Include="Views\Selection\SelectionManagement.cshtml" />
+    <Content Include="Views\Rating\_RatingList.cshtml" />
+    <Content Include="Views\Selection\_SelectionList.cshtml" />
     <Content Include="Views\Food\FoodManagement.cshtml" />
     <Content Include="Views\Food\_AddFoodModal.cshtml" />
     <Content Include="Views\Food\_EditFoodModal.cshtml" />
     <Content Include="Views\Food\_FoodList.cshtml" />
-    <Content Include="Views\Home\Index.cshtml" />
-    <Content Include="Views\Menu\MenuManagement.cshtml" />
-    <Content Include="Views\Menu\_AddMenuModal.cshtml" />
-    <Content Include="Views\Menu\_EditMenuModal.cshtml" />
-    <Content Include="Views\Menu\_MenuList.cshtml" />
-    <Content Include="Views\Production\ProductionManagement.cshtml" />
+    <Content Include="Views\Admin\Index.cshtml" />
+    <Content Include="Views\Account\ForgotPassword.cshtml" />
+    <Content Include="Views\Account\Login.cshtml" />
+    <Content Include="Views\Account\ResetPassword.cshtml" />
+    <Content Include="Web.config" />
     <Content Include="Views\Production\_AddProductionModal.cshtml" />
     <Content Include="Views\Production\_EditProductionModal.cshtml" />
     <Content Include="Views\Production\_ProductionList.cshtml" />
-    <Content Include="Views\Rating\RatingManagement.cshtml" />
-    <Content Include="Views\Rating\_RatingList.cshtml" />
-    <Content Include="Views\Recipe\RecipeManagement.cshtml" />
+    <Content Include="Views\Recipe\_RecipeList.cshtml" />
     <Content Include="Views\Recipe\_AddRecipeModal.cshtml" />
     <Content Include="Views\Recipe\_EditRecipeModal.cshtml" />
-    <Content Include="Views\Recipe\_RecipeList.cshtml" />
-    <Content Include="Views\Report\DailyReport.cshtml" />
-    <Content Include="Views\Selection\SelectionManagement.cshtml" />
-    <Content Include="Views\Selection\_SelectionList.cshtml" />
-    <Content Include="Views\Settings\CompanySettings.cshtml" />
-    <Content Include="Views\Settings\UserSettings.cshtml" />
-    <Content Include="Views\Shared\Error.cshtml" />
-    <Content Include="Views\Stock\StockManagement.cshtml" />
+    <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Stock\_AddStockModal.cshtml" />
     <Content Include="Views\Stock\_EditStockModal.cshtml" />
+    <Content Include="Views\Stock\_RecentMovements.cshtml" />
+    <Content Include="Views\Stock\_RestockModal.cshtml" />
     <Content Include="Views\Stock\_StockList.cshtml" />
+    <Content Include="Views\Menu\WeeklyMenu.cshtml" />
+    <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\User\UserManagement.cshtml" />
-    <Content Include="Views\User\_AddUserModal.cshtml" />
     <Content Include="Views\User\_UserList.cshtml" />
-    <Content Include="Views\Web.config" />
-    <Content Include="Views\_ViewStart.cshtml" />
-    <Content Include="Views\Category\CategoryManagement.cshtml" />
-    <Content Include="Views\Category\_AddCategoryModal.cshtml" />
-    <Content Include="Views\Category\_CategoryList.cshtml" />
-    <Content Include="Views\Category\_EditCategoryModal.cshtml" />
-    <Content Include="Views\Shared\_Layout.cshtml" />
+    <Content Include="Views\Settings\CompanySettings.cshtml" />
+    <Content Include="Views\Settings\UserSettings.cshtml" />
+    <Content Include="Views\Production\ProductionManagement.cshtml" />
+    <Content Include="Views\Recipe\RecipeManagement.cshtml" />
+    <Content Include="Views\Stock\StockManagement.cshtml" />
+    <Content Include="Views\Menu\_AddMenuModal.cshtml" />
+    <Content Include="Views\Menu\_EditMenuModal.cshtml" />
+    <None Include="Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+    <None Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -323,8 +373,35 @@
     <Content Include="Scripts\jquery-3.7.0.min.map" />
   </ItemGroup>
   <ItemGroup>
+    <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="Migrations\202606290802052_InitialCreate.resx">
       <DependentUpon>202606290802052_InitialCreate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202607201457233_AddMealTypes.resx">
+      <DependentUpon>202607201457233_AddMealTypes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202607211719087_AddActivityLogs.resx">
+      <DependentUpon>202607211719087_AddActivityLogs.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202607220934124_AddFoodImagePath.resx">
+      <DependentUpon>202607220934124_AddFoodImagePath.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202607230958189_AddPasswordResetTokens.resx">
+      <DependentUpon>202607230958189_AddPasswordResetTokens.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202607231015306_ActivateProductionStockRecipe.resx">
+      <DependentUpon>202607231015306_ActivateProductionStockRecipe.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202607240845324_StockLedgerAndCategory.resx">
+      <DependentUpon>202607240845324_StockLedgerAndCategory.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202607241919019_AddUserIsActive.resx">
+      <DependentUpon>202607241919019_AddUserIsActive.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202607250959473_RequireUserEmail.resx">
+      <DependentUpon>202607250959473_RequireUserEmail.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
@@ -362,8 +439,11 @@
     <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
     <Error Condition="!Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.2\build\EntityFramework.props'))" />
     <Error Condition="!Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.2\build\EntityFramework.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.TypeScript.MSBuild.6.0.3\build\Microsoft.TypeScript.MSBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.TypeScript.MSBuild.6.0.3\build\Microsoft.TypeScript.MSBuild.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.TypeScript.MSBuild.6.0.3\build\Microsoft.TypeScript.MSBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.TypeScript.MSBuild.6.0.3\build\Microsoft.TypeScript.MSBuild.targets'))" />
   </Target>
   <Import Project="..\packages\EntityFramework.6.5.2\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.targets')" />
+  <Import Project="..\packages\Microsoft.TypeScript.MSBuild.6.0.3\build\Microsoft.TypeScript.MSBuild.targets" Condition="Exists('..\packages\Microsoft.TypeScript.MSBuild.6.0.3\build\Microsoft.TypeScript.MSBuild.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

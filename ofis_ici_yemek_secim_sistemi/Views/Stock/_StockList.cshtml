@@ -1,16 +1,17 @@
-﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.StockItem>
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.StockItem>
 
 <div class="card shadow-sm border-0" style="border-radius:12px;">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table id="stockTable" class="table table-hover align-middle mb-0 table-datatable" style="width:100%;">
             <thead class="table-light">
                 <tr>
                     <th style="padding:1rem 1.5rem;">Malzeme Adı</th>
+                    <th>Kategori</th>
                     <th>Birim</th>
                     <th>Mevcut Miktar</th>
                     <th>Min. Seviye</th>
                     <th>Durum</th>
-                    <th style="min-width:200px;">İşlemler</th>
+                    <th style="min-width:190px;">İşlemler</th>
                 </tr>
             </thead>
             <tbody>
@@ -18,39 +19,69 @@
                 {
                     foreach (var item in Model)
                     {
+                    
+                        bool isLowStock = item.IsActive && item.CurrentQuantity.HasValue && item.MinimumQuantity.HasValue
+                                          && item.CurrentQuantity.Value < item.MinimumQuantity.Value;
                         <tr class="@(!item.IsActive ? "table-secondary opacity-75" : "")">
-                            <td style="padding:1rem 1.5rem;" class="fw-semibold text-dark">@item.Name</td>
+                            <td style="padding:1rem 1.5rem;" class="fw-semibold text-dark">
+                                @item.Name
+                                @if (isLowStock)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 ms-1" style="border-radius:6px;font-size:0.7rem;" title="Stok minimum seviyenin altında">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Düşük Stok
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-muted small">@(string.IsNullOrWhiteSpace(item.Category) ? "—" : item.Category)</td>
                             <td>@item.Unit</td>
                             <td>@(item.CurrentQuantity.HasValue ? item.CurrentQuantity.Value.ToString("N2") : "—")</td>
                             <td>@(item.MinimumQuantity.HasValue ? item.MinimumQuantity.Value.ToString("N2") : "—")</td>
                             <td>
-                                @using (Html.BeginForm("ToggleStockStatus", "Stock", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
+                                @if (item.IsActive)
                                 {
-                                    @Html.AntiForgeryToken()
-                                    if (item.IsActive)
-                                    {
-                                        <button type="submit" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 status-badge-btn" style="border-radius:6px;">Aktif</button>
-                                    }
-                                    else
-                                    {
-                                        <button type="submit" class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 status-badge-btn" style="border-radius:6px;">Pasif</button>
-                                    }
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="border-radius:6px;">Aktif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="border-radius:6px;">Pasif</span>
                                 }
                             </td>
                             <td>
                                 <div class="d-flex gap-2 flex-wrap">
+                                    <a href="@Url.Action("RestockItem", "Stock", new { id = item.ID })"
+                                       class="btn btn-outline-primary btn-row-action btn-edit-ajax"
+                                       data-title="Stok Girişi Yap"
+                                       title="Stok Girişi Yap">
+                                        <i class="fa-solid fa-cart-plus"></i>
+                                        <span class="btn-action-text">Stok Girişi</span>
+                                    </a>
                                     <a href="@Url.Action("EditStock", "Stock", new { id = item.ID })"
-                                       class="btn btn-sm btn-outline-primary btn-edit-ajax"
+                                       class="btn btn-outline-primary btn-row-action btn-edit-ajax"
                                        data-title="Stok Düzenle"
                                        title="Düzenle">
                                         <i class="fa-solid fa-pen-to-square"></i>
+                                        <span class="btn-action-text">Düzenle</span>
                                     </a>
+                                    @using (Html.BeginForm("ToggleStockStatus", "Stock", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="button"
+                                                class="btn btn-outline-primary btn-row-action btn-toggle-status"
+                                                data-active="@item.IsActive.ToString().ToLower()"
+                                                title="@(item.IsActive ? "Pasife Al" : "Aktif Et")">
+                                            <i class="fa-solid fa-power-off"></i>
+                                            <span class="btn-action-text">@(item.IsActive ? "Pasife Al" : "Aktif Et")</span>
+                                        </button>
+                                    }
                                     @using (Html.BeginForm("DeleteStock", "Stock", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
                                     {
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Sil"
-                                                onclick="return confirm('@Html.Raw(item.Name.Replace("'","\\\'"))' stok kalemini silmek istediğinize emin misiniz?')">
+                                        <button type="button"
+                                                class="btn btn-outline-primary btn-row-action btn-delete-stock"
+                                                data-name="@item.Name"
+                                                title="Sil">
                                             <i class="fa-solid fa-trash"></i>
+                                            <span class="btn-action-text">Sil</span>
                                         </button>
                                     }
                                 </div>
@@ -61,7 +92,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-boxes-stacked d-block fs-1 mb-2 text-black-50"></i>
                             Henüz bir stok kalemi eklenmemiş.
                         </td>

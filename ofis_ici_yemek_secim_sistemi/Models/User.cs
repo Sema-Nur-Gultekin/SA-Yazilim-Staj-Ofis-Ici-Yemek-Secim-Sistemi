@@ -18,6 +18,7 @@ namespace ofis_ici_yemek_secim_sistemi.Models
         [Required]
         [MaxLength(150)]
         [Index(IsUnique = true)]
+        [EmailAddress]
         public string Email { get; set; }
 
         [Required]
@@ -35,6 +36,9 @@ namespace ofis_ici_yemek_secim_sistemi.Models
         public string Department { get; set; } 
 
         [MaxLength(100)]
-        public string Location { get; set; } 
+        public string Location { get; set; }
+
+
+        public bool IsActive { get; set; } = true; 
     }
 }

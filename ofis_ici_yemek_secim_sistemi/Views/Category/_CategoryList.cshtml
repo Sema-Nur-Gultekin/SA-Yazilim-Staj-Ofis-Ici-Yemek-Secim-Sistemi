@@ -1,21 +1,21 @@
-﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>
 
 <div class="card shadow-sm border-0" style="border-radius:12px;">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="padding:1rem 1.5rem; width:80px;">Sıra</th>
-                    <th>Kategori Adı</th>
-                    <th>Açıklama</th>
-                    <th>Durum</th>
-                    <th style="min-width:220px;">İşlemler</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model != null && Model.Any())
-                {
-                    foreach (var item in Model)
+        @if (Model != null && Model.Any())
+        {
+            <table id="categoryTable" class="table table-hover align-middle mb-0 table-datatable" style="width:100%;">
+                <thead class="table-light">
+                    <tr>
+                        <th style="padding:1rem 1.5rem; width:80px;">Sıra</th>
+                        <th>Kategori Adı</th>
+                        <th>Açıklama</th>
+                        <th>Durum</th>
+                        <th style="min-width:150px;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
                     {
                         <tr class="@(!item.IsActive ? "table-secondary opacity-75" : "")">
                             <td style="padding:1rem 1.5rem;" class="text-muted fw-bold">
@@ -26,63 +26,76 @@
                                 @(string.IsNullOrEmpty(item.Description) ? "—" : item.Description)
                             </td>
                             <td>
-                                @using (Html.BeginForm("ToggleCategoryStatus", "Category", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
+                                @if (item.IsActive)
                                 {
-                                    @Html.AntiForgeryToken()
-                                    <button type="button" class="btn-toggle-status border-0 bg-transparent p-0"
-                                            title="Durumu değiştirmek için tıklayın">
-                                        @if (item.IsActive)
-                                        {
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="border-radius:6px;">Aktif</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="border-radius:6px;">Pasif</span>
-                                        }
-                                    </button>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="border-radius:6px;">Aktif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="border-radius:6px;">Pasif</span>
                                 }
                             </td>
                             <td>
                                 <div class="d-flex gap-2 flex-wrap">
                                     <a href="@Url.Action("EditCategory", "Category", new { id = item.ID })"
-                                       class="btn btn-sm btn-outline-primary btn-edit-ajax"
+                                       class="btn btn-outline-primary btn-row-action btn-edit-ajax"
                                        data-title="Kategori Düzenle"
                                        title="Düzenle">
                                         <i class="fa-solid fa-pen-to-square"></i>
+                                        <span class="btn-action-text">Düzenle</span>
                                     </a>
+
+                                    @using (Html.BeginForm("ToggleCategoryStatus", "Category", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="button"
+                                                class="btn btn-outline-primary btn-row-action btn-toggle-status"
+                                                data-active="@item.IsActive.ToString().ToLower()"
+                                                title="@(item.IsActive ? "Pasife Al" : "Aktif Et")">
+                                            <i class="fa-solid fa-power-off"></i>
+                                            <span class="btn-action-text">@(item.IsActive ? "Pasife Al" : "Aktif Et")</span>
+                                        </button>
+                                    }
 
                                     @using (Html.BeginForm("DeleteCategory", "Category", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
                                     {
                                         @Html.AntiForgeryToken()
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-danger btn-delete-category"
+                                                class="btn btn-outline-primary btn-row-action btn-delete-category"
                                                 data-name="@item.Name"
                                                 title="Sil">
                                             <i class="fa-solid fa-trash"></i>
+                                            <span class="btn-action-text">Sil</span>
                                         </button>
                                     }
                                 </div>
                             </td>
                         </tr>
                     }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state-block text-center py-5">
+                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
+                    <i class="fa-solid fa-tags fs-1 text-muted opacity-50"></i>
+                </div>
+                @if (!string.IsNullOrEmpty(ViewBag.Search as string))
+                {
+                    <h5 class="fw-bold text-dark">Sonuç bulunamadı</h5>
+                    <p class="text-muted mb-3">Aramanızla eşleşen kategori bulunamadı.</p>
                 }
                 else
                 {
-                    <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-tags d-block fs-1 mb-2 text-black-50"></i>
-                            @if (!string.IsNullOrEmpty(ViewBag.Search as string))
-                            {
-                                <span>Aramanızla eşleşen kategori bulunamadı.</span>
-                            }
-                            else
-                            {
-                                <span>Henüz eklenmiş bir kategori bulunmamaktadır.</span>
-                            }
-                        </td>
-                    </tr>
+                    <h5 class="fw-bold text-dark">Henüz kategori eklenmemiş</h5>
+                    <p class="text-muted mb-3">Yemekleri gruplandırmak için ilk kategorinizi oluşturun.</p>
+                    <button type="button" class="btn btn-primary btn-empty-add"
+                            data-url="@Url.Action("AddCategory", "Category")" data-title="Yeni Kategori Ekle">
+                        <i class="fa-solid fa-plus me-2"></i>Eklenecek yerler
+                    </button>
                 }
-            </tbody>
-        </table>
+            </div>
+        }
     </div>
 </div>

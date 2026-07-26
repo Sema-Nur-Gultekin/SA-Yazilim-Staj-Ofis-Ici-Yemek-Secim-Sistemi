@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.Selection>
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.Selection>
 @{
     var userNames = ViewBag.UserNames as Dictionary<int, string>;
     var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
@@ -35,20 +35,20 @@
 
 <div class="card shadow-sm border-0" style="border-radius:12px;">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="padding:1rem 1.5rem;">Tarih</th>
-                    <th>Öğün</th>
-                    <th>Personel</th>
-                    <th>Seçilen Yemekler</th>
-                    <th style="min-width:80px;">İşlem</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (grouped.Any())
-                {
-                    foreach (var group in grouped)
+        @if (grouped.Any())
+        {
+            <table id="selectionTable" class="table table-hover align-middle mb-0 table-datatable" style="width:100%;">
+                <thead class="table-light">
+                    <tr>
+                        <th style="padding:1rem 1.5rem;">Tarih</th>
+                        <th>Öğün</th>
+                        <th>Personel</th>
+                        <th>Seçilen Yemekler</th>
+                        <th style="min-width:80px;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var group in grouped)
                     {
                         <tr>
                             <td style="padding:1rem 1.5rem;" class="fw-semibold">@(group.Date.HasValue ? group.Date.Value.ToString("dd.MM.yyyy") : "-")</td>
@@ -63,7 +63,7 @@
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="ids" value="@string.Join(",", group.SelectionIDs)" />
                                     <button type="button"
-                                            class="btn btn-sm btn-outline-danger btn-delete-selection-group"
+                                            class="btn btn-outline-primary btn-row-action btn-delete-selection-group"
                                             data-user="@group.UserName"
                                             data-date="@(group.Date.HasValue ? group.Date.Value.ToString("dd.MM.yyyy") : "")"
                                             data-meal="@group.MealType"
@@ -74,17 +74,59 @@
                             </td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-clipboard-list d-block fs-1 mb-2 text-black-50"></i>
-                            Henüz hiçbir personel seçim yapmamış.
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state-block text-center py-5">
+                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
+                    <i class="fa-solid fa-clipboard-list fs-1 text-muted opacity-50"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Kayıt Bulunamadı</h5>
+                <p class="text-muted">Henüz hiçbir personel seçim yapmamış veya filtrenizle eşleşen kayıt yok.</p>
+            </div>
+        }
     </div>
 </div>
+
+@{
+    var nonSelectors = ViewBag.NonSelectors as List<ofis_ici_yemek_secim_sistemi.Models.User>;
+    bool hasMenuInRange = ViewBag.HasMenuInRange != null && (bool)ViewBag.HasMenuInRange;
+    DateTime nsFrom = ViewBag.NonSelectorsFrom;
+    DateTime nsTo = ViewBag.NonSelectorsTo;
+    string rangeLabel = nsFrom == nsTo ? nsFrom.ToString("dd.MM.yyyy") : $"{nsFrom:dd.MM.yyyy} - {nsTo:dd.MM.yyyy}";
+}
+
+
+@if (hasMenuInRange)
+{
+    <div class="card shadow-sm border-0 mt-4" style="border-radius:12px;">
+        <div class="card-body">
+            <h6 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>
+                Seçim Yapmayan Personel <span class="text-muted fw-normal">(@rangeLabel)</span>
+            </h6>
+            @if (nonSelectors != null && nonSelectors.Any())
+            {
+                <p class="text-muted small mb-3">Aşağıdaki personel, bu tarih aralığında aktif menü olmasına rağmen henüz yemek seçimi yapmadı.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var u in nonSelectors)
+                    {
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2" style="border-radius:8px; font-size:0.85rem;">
+                            <i class="fa-solid fa-user me-1"></i>@u.Name
+                            @if (!string.IsNullOrWhiteSpace(u.Department))
+                            {
+                                <span class="text-muted">(@u.Department)</span>
+                            }
+                        </span>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-success small mb-0"><i class="fa-solid fa-circle-check me-1"></i>Bu tarih aralığında tüm personel seçimini yapmış.</p>
+            }
+        </div>
+    </div>
+}

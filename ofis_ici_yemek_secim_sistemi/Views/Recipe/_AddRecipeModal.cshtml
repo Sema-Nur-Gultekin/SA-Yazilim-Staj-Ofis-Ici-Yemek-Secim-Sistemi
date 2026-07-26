@@ -1,10 +1,11 @@
-﻿@model ofis_ici_yemek_secim_sistemi.Models.RecipeIngredient
+@model ofis_ici_yemek_secim_sistemi.Models.RecipeIngredient
 @{
     var foods = ViewBag.Foods as List<ofis_ici_yemek_secim_sistemi.Models.Food>;
     var stockItems = ViewBag.StockItems as List<ofis_ici_yemek_secim_sistemi.Models.StockItem>;
+    var unitGroups = ofis_ici_yemek_secim_sistemi.Services.UnitHelper.AllUnits.GroupBy(u => u.Category);
 }
 
-<form action="@Url.Action("AddRecipe", "Recipe")" method="post">
+<form action="@Url.Action("AddRecipe", "Recipe")" method="post" id="addRecipeForm">
     @Html.AntiForgeryToken()
 
     <div class="mb-3">
@@ -23,13 +24,13 @@
 
     <div class="mb-3">
         <label class="form-label fw-semibold">Stok Malzemesi <span class="text-danger">*</span></label>
-        <select name="StockItemID" class="form-select py-2" required style="border-radius:8px;">
+        <select name="StockItemID" id="recipeStockSelect" class="form-select py-2" required style="border-radius:8px;">
             <option value="">— Malzeme Seçin —</option>
             @if (stockItems != null)
             {
                 foreach (var s in stockItems)
                 {
-                    <option value="@s.ID">@s.Name (@s.Unit)</option>
+                    <option value="@s.ID" data-category="@ofis_ici_yemek_secim_sistemi.Services.UnitHelper.GetCategory(s.Unit)" data-unit="@s.Unit">@s.Name (@s.Unit)</option>
                 }
             }
         </select>
@@ -37,19 +38,27 @@
 
     <div class="mb-3">
         <label class="form-label fw-semibold">Gereken Miktar <span class="text-danger">*</span></label>
-        <input type="number" name="RequiredQuantity" class="form-control py-2" step="0.01" required placeholder="Örn: 2.5" style="border-radius:8px;" />
+        <input type="number" name="RequiredQuantity" class="form-control py-2" step="0.01" min="0.01" required placeholder="Örn: 2.5" style="border-radius:8px;" />
     </div>
 
     <div class="mb-4">
         <label class="form-label fw-semibold">Birim <span class="text-danger">*</span></label>
-        <select name="Unit" class="form-select py-2" required style="border-radius:8px;">
-            <option value="">— Birim Seçin —</option>
-            <option value="kg">Kilogram (kg)</option>
-            <option value="lt">Litre (lt)</option>
-            <option value="adet">Adet</option>
-            <option value="gr">Gram (gr)</option>
-            <option value="ml">Mililitre (ml)</option>
+        <select name="Unit" id="recipeUnitSelect" class="form-select py-2" required style="border-radius:8px;">
+            <option value="">— Önce malzeme seçin —</option>
+            @foreach (var group in unitGroups)
+            {
+                <optgroup label="@group.Key" data-category="@group.Key">
+                    @foreach (var unit in group)
+                    {
+                        <option value="@unit.Value">@unit.Label</option>
+                    }
+                </optgroup>
+            }
         </select>
+        <div class="form-text" id="recipeUnitHint">
+            <i class="fa-solid fa-circle-info"></i>
+            BİRİM GÜVENLİĞİ: Yalnızca seçtiğiniz malzemeyle aynı ölçü kategorisindeki (Ağırlık/Hacim/Adet) birimler seçilebilir.
+        </div>
     </div>
 
     <div class="d-flex justify-content-end gap-2">
@@ -59,3 +68,35 @@
         </button>
     </div>
 </form>
+
+<script>
+
+    (function () {
+        var stockSelect = document.getElementById('recipeStockSelect');
+        var unitSelect = document.getElementById('recipeUnitSelect');
+        if (!stockSelect || !unitSelect) return;
+
+        function filterUnitsByCategory() {
+            var selectedOption = stockSelect.options[stockSelect.selectedIndex];
+            var category = selectedOption ? selectedOption.getAttribute('data-category') : null;
+            var matchingUnit = selectedOption ? selectedOption.getAttribute('data-unit') : null;
+
+            var groups = unitSelect.querySelectorAll('optgroup');
+            groups.forEach(function (g) {
+                var isMatch = !category || g.getAttribute('data-category') === category;
+                g.disabled = !isMatch;
+                g.hidden = !isMatch;
+            });
+
+         
+            if (matchingUnit) {
+                unitSelect.value = matchingUnit;
+            } else {
+                unitSelect.value = '';
+            }
+        }
+
+        stockSelect.addEventListener('change', filterUnitsByCategory);
+        filterUnitsByCategory();
+    })();
+</script>

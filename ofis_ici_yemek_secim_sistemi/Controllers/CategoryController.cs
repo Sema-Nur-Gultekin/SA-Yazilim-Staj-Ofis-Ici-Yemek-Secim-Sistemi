@@ -1,4 +1,5 @@
-﻿using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Services;
 using System.Linq;
 using System.Web.Mvc;
 
@@ -16,7 +17,7 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             var categories = _context.FoodCategories
                 .Where(c => c.CompanyID == companyId);
 
-            
+   
             if (!string.IsNullOrWhiteSpace(search))
             {
                 string term = search.Trim().ToLower();
@@ -26,8 +27,10 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 );
             }
 
+
             var orderedCategories = categories
-                .OrderBy(c => c.DisplayOrder)
+                .OrderBy(c => c.DisplayOrder.HasValue ? 0 : 1)
+                .ThenBy(c => c.DisplayOrder)
                 .ToList();
 
             if (Request.IsAjaxRequest())
@@ -39,12 +42,12 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             return View(orderedCategories);
         }
 
-
         [HttpGet]
         public ActionResult AddCategory()
         {
             return PartialView("_AddCategoryModal", new FoodCategory());
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -61,16 +64,33 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = errors });
             }
 
+            model.Name = model.Name?.Trim();
+            model.Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim();
+
+     
+            if (model.DisplayOrder.HasValue)
+            {
+                bool orderTaken = _context.FoodCategories
+                    .Any(c => c.CompanyID == companyId && c.DisplayOrder == model.DisplayOrder.Value);
+
+                if (orderTaken)
+                {
+                    return Json(new { success = false, message = $"'{model.DisplayOrder}' sıra numarası zaten başka bir kategoriye atanmış. Lütfen farklı bir sıra numarası seçin." });
+                }
+            }
+
             model.CompanyID = companyId;
             model.IsActive = true;
 
             _context.FoodCategories.Add(model);
             _context.SaveChanges();
 
+            ActivityLogger.LogAndSave(_context, companyId, GetCurrentUserId(), "Kategori Eklendi", model.ID);
+
             return Json(new { success = true, message = "Kategori başarıyla eklendi." });
         }
 
-
+ 
         [HttpGet]
         public ActionResult EditCategory(int id)
         {
@@ -104,19 +124,35 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             if (category == null)
                 return Json(new { success = false, message = "Kategori bulunamadı." });
 
-            category.Name = model.Name;
-            category.Description = model.Description;
+    
+            string trimmedName = model.Name?.Trim();
+            string trimmedDescription = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim();
+
+     
+            if (model.DisplayOrder.HasValue)
+            {
+                bool orderTaken = _context.FoodCategories
+                    .Any(c => c.CompanyID == companyId && c.ID != id && c.DisplayOrder == model.DisplayOrder.Value);
+
+                if (orderTaken)
+                {
+                    return Json(new { success = false, message = $"'{model.DisplayOrder}' sıra numarası zaten başka bir kategoriye atanmış. Lütfen farklı bir sıra numarası seçin." });
+                }
+            }
+
+            category.Name = trimmedName;
+            category.Description = trimmedDescription;
             category.DisplayOrder = model.DisplayOrder;
 
-          
             bool isActive = Request.Form["IsActive"] != null && Request.Form["IsActive"] == "true";
             category.IsActive = isActive;
 
+            ActivityLogger.Log(_context, companyId, GetCurrentUserId(), "Kategori Düzenlendi", category.ID);
             _context.SaveChanges();
             return Json(new { success = true, message = "Kategori başarıyla güncellendi." });
         }
 
-   
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult ToggleCategoryStatus(int id)
@@ -129,13 +165,14 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = "Kategori bulunamadı." });
 
             category.IsActive = !category.IsActive;
+            string status = category.IsActive ? "aktif" : "pasif";
+            ActivityLogger.Log(_context, companyId, GetCurrentUserId(), $"Kategori {status} yapıldı", category.ID);
             _context.SaveChanges();
 
-            string status = category.IsActive ? "aktif" : "pasif";
             return Json(new { success = true, message = $"Kategori {status} hale getirildi." });
         }
 
-  
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteCategory(int id)
@@ -148,6 +185,7 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = "Kategori bulunamadı." });
 
             category.IsActive = false;
+            ActivityLogger.Log(_context, companyId, GetCurrentUserId(), "Kategori Silindi (Pasife Alındı)", category.ID);
             _context.SaveChanges();
 
             return Json(new { success = true, message = "Kategori başarıyla silindi (pasife alındı)." });

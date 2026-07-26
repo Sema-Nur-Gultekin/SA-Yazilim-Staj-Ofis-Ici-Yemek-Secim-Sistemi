@@ -17,6 +17,11 @@
                         <div class="alert alert-success"><i class="fa-solid fa-check-circle"></i> @ViewBag.SuccessMessage</div>
                     }
 
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> @ViewBag.ErrorMessage</div>
+                    }
+
                     <form action="@Url.Action("CompanySettings", "Settings")" method="post">
                         @Html.AntiForgeryToken()
 

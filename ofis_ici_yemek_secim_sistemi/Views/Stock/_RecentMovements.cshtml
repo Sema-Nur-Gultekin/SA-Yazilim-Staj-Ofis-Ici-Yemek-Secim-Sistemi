@@ -1,0 +1,38 @@
+@model List<ofis_ici_yemek_secim_sistemi.Controllers.StockMovementView>
+
+@if (Model != null && Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr class="text-muted small">
+                    <th>Malzeme</th>
+                    <th>Değişim</th>
+                    <th>Sonuç</th>
+                    <th>Sebep</th>
+                    <th>Kullanıcı</th>
+                    <th>Tarih</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@m.StockName</td>
+                        <td class="@(m.ChangeAmount >= 0 ? "text-success" : "text-danger") fw-semibold">
+                            @(m.ChangeAmount >= 0 ? "+" : "")@m.ChangeAmount.ToString("N2") @m.StockUnit
+                        </td>
+                        <td>@m.ResultingQuantity.ToString("N2") @m.StockUnit</td>
+                        <td><span class="badge bg-secondary-subtle text-secondary px-2 py-1" style="border-radius:6px;">@m.Reason</span></td>
+                        <td class="text-muted small">@m.UserName</td>
+                        <td class="text-muted small">@m.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p class="text-muted small mb-0">Henüz bir stok hareketi kaydedilmemiş.</p>
+}

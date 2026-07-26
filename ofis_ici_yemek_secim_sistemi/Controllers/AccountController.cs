@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Security; 
 using ofis_ici_yemek_secim_sistemi.Models; 
 using ofis_ici_yemek_secim_sistemi.Data;  
+using ofis_ici_yemek_secim_sistemi.Services;
 using BCrypt.Net;
 
 namespace ofis_ici_yemek_secim_sistemi.Controllers
@@ -41,6 +43,13 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             }
 
             var user = _context.Users.FirstOrDefault(u => u.Email == email);
+
+            if (user != null && !user.IsActive)
+            {
+                ViewBag.Error = "Hesabınız pasife alınmış. Lütfen sistem yöneticinizle iletişime geçin.";
+                return View();
+            }
+
             if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
           
@@ -185,6 +194,154 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 ViewBag.Error = "Kullanıcı kaydı tamamlanırken veritabanı yazma hatası oluştu.";
                 return View();
             }
+        }
+
+
+        [HttpGet]
+        [AllowAnonymous]
+        public ActionResult ForgotPassword()
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+            return View();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult ForgotPassword(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                ViewBag.Error = "Lütfen e-posta adresinizi giriniz.";
+                return View();
+            }
+
+            var user = _context.Users.FirstOrDefault(u => u.Email == email.Trim());
+
+            if (user != null && !user.IsActive)
+            {
+                ViewBag.Error = "Bu hesap pasife alınmış. Şifre sıfırlama bağlantısı gönderilemez. Lütfen sistem yöneticinizle iletişime geçin.";
+                return View();
+            }
+
+
+            if (user == null)
+            {
+                ViewBag.Error = "Bu e-posta adresine kayıtlı bir hesap bulunamadı.";
+                return View();
+            }
+
+            try
+            {
+
+                var oldTokens = _context.PasswordResetTokens
+                    .Where(t => t.UserID == user.ID && !t.IsUsed);
+                foreach (var old in oldTokens)
+                {
+                    old.IsUsed = true;
+                }
+
+
+                string token;
+                using (var rng = new RNGCryptoServiceProvider())
+                {
+                    byte[] bytes = new byte[32];
+                    rng.GetBytes(bytes);
+                    token = Convert.ToBase64String(bytes)
+                        .Replace("+", "-").Replace("/", "_").Replace("=", "");
+                }
+
+                var resetToken = new PasswordResetToken
+                {
+                    UserID = user.ID,
+                    Token = token,
+                    ExpiresAt = DateTime.Now.AddMinutes(30),
+                    IsUsed = false,
+                    CreatedAt = DateTime.Now
+                };
+                _context.PasswordResetTokens.Add(resetToken);
+                _context.SaveChanges();
+
+                string resetLink = Url.Action("ResetPassword", "Account", new { token = token }, Request.Url.Scheme);
+                EmailService.SendPasswordResetEmail(user.Email, user.Name, resetLink);
+
+                ViewBag.Success = "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Gelen kutunuzu (ve spam klasörünü) kontrol edin.";
+                return View();
+            }
+            catch (Exception ex)
+            {
+
+                ViewBag.Error = "E-posta gönderilirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin veya sistem yöneticinizle iletişime geçin. (" + ex.Message + ")";
+                return View();
+            }
+        }
+
+
+        [HttpGet]
+        [AllowAnonymous]
+        public ActionResult ResetPassword(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                ViewBag.Invalid = true;
+                return View();
+            }
+
+
+            var resetToken = _context.PasswordResetTokens.FirstOrDefault(t => t.Token == token);
+            if (resetToken == null || resetToken.IsUsed || resetToken.ExpiresAt < DateTime.Now)
+            {
+                ViewBag.Invalid = true;
+                return View();
+            }
+
+            ViewBag.Token = token;
+            return View();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult ResetPassword(string token, string password, string confirmPassword)
+        {
+            var resetToken = _context.PasswordResetTokens.FirstOrDefault(t => t.Token == token);
+            if (resetToken == null || resetToken.IsUsed || resetToken.ExpiresAt < DateTime.Now)
+            {
+                ViewBag.Invalid = true;
+                return View();
+            }
+
+            ViewBag.Token = token;
+
+            if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+            {
+                ViewBag.Error = "Şifreniz en az 6 karakter olmalıdır.";
+                return View();
+            }
+
+            if (password != confirmPassword)
+            {
+                ViewBag.Error = "Girdiğiniz şifreler birbiriyle uyuşmuyor.";
+                return View();
+            }
+
+            var user = _context.Users.FirstOrDefault(u => u.ID == resetToken.UserID);
+            if (user == null)
+            {
+                ViewBag.Invalid = true;
+                return View();
+            }
+
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
+            resetToken.IsUsed = true;
+            _context.SaveChanges();
+
+            ViewBag.Done = true;
+            return View();
         }
 
         public ActionResult Logout()

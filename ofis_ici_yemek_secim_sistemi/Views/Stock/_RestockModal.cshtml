@@ -1,0 +1,60 @@
+@model ofis_ici_yemek_secim_sistemi.Models.StockItem
+
+<form action="@Url.Action("RestockItem", "Stock", new { id = Model.ID })" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <div class="alert alert-light border small mb-0">
+            <strong>@Model.Name</strong> — Mevcut miktar:
+            <strong>@((Model.CurrentQuantity.HasValue ? Model.CurrentQuantity.Value.ToString("N2") : "0")) @Model.Unit</strong>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">İşlem Türü</label>
+        <select id="restockDirection" class="form-select py-2" style="border-radius:8px;">
+            <option value="add">Stok Girişi (Ekle) +</option>
+            <option value="remove">Manuel Düzeltme (Azalt) −</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Miktar (@Model.Unit) <span class="text-danger">*</span></label>
+        <input type="number" id="restockAmountInput" class="form-control py-2" step="0.01" min="0.01" required placeholder="Örn: 25" style="border-radius:8px;" />
+        <input type="hidden" name="amount" id="restockAmountHidden" />
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Açıklama / Sebep</label>
+        <input type="text" name="reason" class="form-control py-2" placeholder="Örn: Tedarikçiden alım, sayım düzeltmesi vb." maxlength="100" style="border-radius:8px;" />
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+        <button type="submit" class="btn btn-primary" data-original-text="<i class='fa-solid fa-floppy-disk me-1'></i>Kaydet">
+            <i class="fa-solid fa-floppy-disk me-1"></i>Kaydet
+        </button>
+    </div>
+</form>
+
+<script>
+
+    (function () {
+        var directionSelect = document.getElementById('restockDirection');
+        var amountInput = document.getElementById('restockAmountInput');
+        var amountHidden = document.getElementById('restockAmountHidden');
+
+        function syncHiddenAmount() {
+            var raw = parseFloat(amountInput.value || '0');
+            if (isNaN(raw)) raw = 0;
+            var signed = directionSelect.value === 'remove' ? -Math.abs(raw) : Math.abs(raw);
+            amountHidden.value = signed;
+        }
+
+        if (directionSelect && amountInput && amountHidden) {
+            directionSelect.addEventListener('change', syncHiddenAmount);
+            amountInput.addEventListener('input', syncHiddenAmount);
+            syncHiddenAmount();
+        }
+    })();
+</script>

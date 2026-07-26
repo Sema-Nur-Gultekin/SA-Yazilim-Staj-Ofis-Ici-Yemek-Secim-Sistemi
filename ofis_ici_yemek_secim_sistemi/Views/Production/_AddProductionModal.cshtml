@@ -1,6 +1,7 @@
 ﻿@model ofis_ici_yemek_secim_sistemi.Models.ProductionRecord
 @{
     var foods = ViewBag.Foods as List<ofis_ici_yemek_secim_sistemi.Models.Food>;
+    var mealTypes = ViewBag.MealTypes as List<ofis_ici_yemek_secim_sistemi.Models.MealType>;
 }
 
 <form action="@Url.Action("AddProduction", "Production")" method="post">
@@ -13,9 +14,14 @@
     <div class="mb-3">
         <label class="form-label fw-semibold">Öğün Tipi</label>
         <select name="MealType" class="form-select py-2" required style="border-radius:8px;">
-            <option value="Sabah">Sabah</option>
-            <option value="Öğle" selected>Öğle</option>
-            <option value="Akşam">Akşam</option>
+            <option value="">— Öğün Seçin —</option>
+            @if (mealTypes != null)
+            {
+                foreach (var mt in mealTypes)
+                {
+                    <option value="@mt.Name">@mt.Name</option>
+                }
+            }
         </select>
     </div>
     <div class="mb-3">

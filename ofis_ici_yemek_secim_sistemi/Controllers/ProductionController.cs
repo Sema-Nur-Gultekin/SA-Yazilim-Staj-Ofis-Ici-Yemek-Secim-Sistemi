@@ -1,6 +1,5 @@
-﻿/*
-using DocumentFormat.OpenXml.Office2021.Excel.RichDataWebImage;
 using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Services;
 using System;
 using System.Linq;
 using System.Web.Mvc;
@@ -34,6 +33,12 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
         {
             int companyId = GetCurrentUserCompanyId();
             ViewBag.Foods = _context.Foods.Where(f => f.CompanyID == companyId && f.IsActive).OrderBy(f => f.Name).ToList();
+          
+            ViewBag.MealTypes = _context.MealTypes
+                .Where(m => m.CompanyID == companyId && m.IsActive)
+                .OrderBy(m => m.DisplayOrder.HasValue ? 0 : 1)
+                .ThenBy(m => m.DisplayOrder)
+                .ToList();
             return PartialView("_AddProductionModal", new ProductionRecord { Date = DateTime.Today });
         }
 
@@ -50,6 +55,12 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = errors });
             }
 
+           
+            if ((model.PlannedDemandQuantity ?? 0) < 0 || (model.ProducedQuantity ?? 0) < 0 || (model.ActualConsumedQuantity ?? 0) < 0)
+            {
+                return Json(new { success = false, message = "Planlanan, üretilen ve tüketilen miktarlar negatif olamaz." });
+            }
+
             var existingRecord = _context.ProductionRecords
                 .FirstOrDefault(p => p.CompanyID == companyId
                                     && p.Date == model.Date
@@ -61,7 +72,8 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 try
                 {
                     int producedQty = model.ProducedQuantity ?? 0;
-                    string msg = "";
+                    string msg;
+                    int affectedId;
 
                     if (existingRecord != null)
                     {
@@ -71,6 +83,7 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                         existingRecord.Note = model.Note;
                         _context.SaveChanges();
                         msg = "Mevcut üretim kaydı güncellendi. ";
+                        affectedId = existingRecord.ID;
                     }
                     else
                     {
@@ -78,32 +91,17 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                         _context.ProductionRecords.Add(model);
                         _context.SaveChanges();
                         msg = "Yeni üretim kaydı eklendi. ";
+                        affectedId = model.ID;
                     }
 
                     if (producedQty > 0)
                     {
-                        var recipes = _context.RecipeIngredients
-                            .Where(r => r.CompanyID == companyId && r.FoodID == model.FoodID)
-                            .ToList();
-
-                        foreach (var recipe in recipes)
-                        {
-                            var stockItem = _context.StockItems.FirstOrDefault(s => s.ID == recipe.StockItemID && s.CompanyID == companyId);
-                            if (stockItem == null)
-                                throw new Exception($"Reçetedeki malzeme (ID:{recipe.StockItemID}) stokta bulunamadı.");
-
-                            decimal requiredPerPortion = recipe.RequiredQuantity;
-                            decimal totalRequired = requiredPerPortion * producedQty;
-                            decimal amountToDeduct = ConvertToStockUnit(totalRequired, recipe.Unit, stockItem.Unit);
-
-                            decimal currentStock = stockItem.CurrentQuantity ?? 0;
-                            if (currentStock < amountToDeduct)
-                                throw new Exception($"Yetersiz stok! '{stockItem.Name}' için gereken: {amountToDeduct} {stockItem.Unit}, mevcut: {currentStock} {stockItem.Unit}.");
-
-                            stockItem.CurrentQuantity = currentStock - amountToDeduct;
-                        }
-                        _context.SaveChanges();
+                  
+                        DeductStockForProduction(companyId, model.FoodID, producedQty, affectedId);
                     }
+
+                    ActivityLogger.Log(_context, companyId, GetCurrentUserId(), "Üretim Kaydı Eklendi/Güncellendi", affectedId);
+                    _context.SaveChanges();
 
                     transaction.Commit();
                     return Json(new { success = true, message = msg + "Stok güncellendi." });
@@ -124,6 +122,11 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             if (record == null) return HttpNotFound();
 
             ViewBag.Foods = _context.Foods.Where(f => f.CompanyID == companyId && f.IsActive).OrderBy(f => f.Name).ToList();
+            ViewBag.MealTypes = _context.MealTypes
+                .Where(m => m.CompanyID == companyId && m.IsActive)
+                .OrderBy(m => m.DisplayOrder.HasValue ? 0 : 1)
+                .ThenBy(m => m.DisplayOrder)
+                .ToList();
             return PartialView("_EditProductionModal", record);
         }
 
@@ -140,20 +143,61 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = errors });
             }
 
+            if ((model.PlannedDemandQuantity ?? 0) < 0 || (model.ProducedQuantity ?? 0) < 0 || (model.ActualConsumedQuantity ?? 0) < 0)
+            {
+                return Json(new { success = false, message = "Planlanan, üretilen ve tüketilen miktarlar negatif olamaz." });
+            }
+
             var record = _context.ProductionRecords.FirstOrDefault(p => p.ID == id && p.CompanyID == companyId);
             if (record == null)
                 return Json(new { success = false, message = "Kayıt bulunamadı." });
 
-            record.Date = model.Date;
-            record.MealType = model.MealType;
-            record.FoodID = model.FoodID;
-            record.PlannedDemandQuantity = model.PlannedDemandQuantity;
-            record.ProducedQuantity = model.ProducedQuantity;
-            record.ActualConsumedQuantity = model.ActualConsumedQuantity;
-            record.Note = model.Note;
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    int oldProducedQty = record.ProducedQuantity ?? 0;
+                    int oldFoodId = record.FoodID;
+                    int newProducedQty = model.ProducedQuantity ?? 0;
 
-            _context.SaveChanges();
-            return Json(new { success = true, message = "Üretim kaydı güncellendi." });
+                    record.Date = model.Date;
+                    record.MealType = model.MealType;
+                    record.FoodID = model.FoodID;
+                    record.PlannedDemandQuantity = model.PlannedDemandQuantity;
+                    record.ProducedQuantity = model.ProducedQuantity;
+                    record.ActualConsumedQuantity = model.ActualConsumedQuantity;
+                    record.Note = model.Note;
+                    _context.SaveChanges();
+
+                
+                    if (oldFoodId != model.FoodID)
+                    {
+                        if (oldProducedQty > 0)
+                            RestoreStockForProduction(companyId, oldFoodId, oldProducedQty, record.ID);
+                        if (newProducedQty > 0)
+                            DeductStockForProduction(companyId, model.FoodID, newProducedQty, record.ID);
+                    }
+                    else
+                    {
+                        int delta = newProducedQty - oldProducedQty;
+                        if (delta > 0)
+                            DeductStockForProduction(companyId, model.FoodID, delta, record.ID);
+                        else if (delta < 0)
+                            RestoreStockForProduction(companyId, model.FoodID, -delta, record.ID);
+                    }
+
+                    ActivityLogger.Log(_context, companyId, GetCurrentUserId(), "Üretim Kaydı Düzenlendi", record.ID);
+                    _context.SaveChanges();
+
+                    transaction.Commit();
+                    return Json(new { success = true, message = "Üretim kaydı güncellendi. Stok farkı işlendi." });
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Json(new { success = false, message = "Güncelleme sırasında hata: " + ex.Message });
+                }
+            }
         }
 
         [HttpPost]
@@ -162,41 +206,104 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
         {
             int companyId = GetCurrentUserCompanyId();
             var record = _context.ProductionRecords.FirstOrDefault(p => p.ID == id && p.CompanyID == companyId);
-            if (record != null)
+            if (record == null)
+                return Json(new { success = false, message = "Kayıt bulunamadı." });
+
+            using (var transaction = _context.Database.BeginTransaction())
             {
-                _context.ProductionRecords.Remove(record);
-                _context.SaveChanges();
+                try
+                {
+                 
+                    int producedQty = record.ProducedQuantity ?? 0;
+                    if (producedQty > 0)
+                    {
+                        RestoreStockForProduction(companyId, record.FoodID, producedQty, record.ID);
+                    }
+
+                    _context.ProductionRecords.Remove(record);
+                    ActivityLogger.Log(_context, companyId, GetCurrentUserId(), "Üretim Kaydı Silindi (stok iade edildi)", id);
+                    _context.SaveChanges();
+
+                    transaction.Commit();
+                    return Json(new { success = true, message = "Üretim kaydı silindi ve ilgili stok iade edildi." });
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Json(new { success = false, message = "Silme sırasında hata: " + ex.Message });
+                }
             }
-            return RedirectToAction("ProductionManagement");
         }
 
-        private decimal ConvertToStockUnit(decimal amount, string recipeUnit, string stockUnit)
+   
+        private void DeductStockForProduction(int companyId, int foodId, int portions, int? productionRecordId)
         {
-            if (string.IsNullOrEmpty(recipeUnit) || string.IsNullOrEmpty(stockUnit))
-                throw new Exception("Birim bilgisi eksik.");
+            var recipes = _context.RecipeIngredients
+                .Where(r => r.CompanyID == companyId && r.FoodID == foodId)
+                .ToList();
 
-            string NormalizeUnit(string unit)
+            foreach (var recipe in recipes)
             {
-                if (string.IsNullOrWhiteSpace(unit)) return "";
-                string u = unit.Trim().ToLower();
-                if (u == "g" || u == "gr" || u == "gram" || u == "grams") return "g";
-                if (u == "kg" || u == "kilogram" || u == "kilograms") return "kg";
-                if (u == "ml" || u == "mililitre" || u == "milliliter" || u == "millilitres") return "ml";
-                if (u == "l" || u == "lt" || u == "litre" || u == "liter" || u == "litres") return "lt";
-                return u;
+                var stockItem = _context.StockItems.FirstOrDefault(s => s.ID == recipe.StockItemID && s.CompanyID == companyId);
+                if (stockItem == null)
+                    throw new Exception($"Reçetedeki malzeme (ID:{recipe.StockItemID}) stokta bulunamadı.");
+
+                decimal totalRequired = recipe.RequiredQuantity * portions;
+                decimal amountToDeduct = UnitHelper.Convert(totalRequired, recipe.Unit, stockItem.Unit);
+
+                decimal currentStock = stockItem.CurrentQuantity ?? 0;
+                if (currentStock < amountToDeduct)
+                    throw new Exception($"Yetersiz stok! '{stockItem.Name}' için gereken: {amountToDeduct} {stockItem.Unit}, mevcut: {currentStock} {stockItem.Unit}.");
+
+                decimal newQuantity = currentStock - amountToDeduct;
+                stockItem.CurrentQuantity = newQuantity;
+
+                _context.StockMovements.Add(new StockMovement
+                {
+                    CompanyID = companyId,
+                    StockItemID = stockItem.ID,
+                    ChangeAmount = -amountToDeduct,
+                    ResultingQuantity = newQuantity,
+                    Reason = "Üretim Tüketimi",
+                    RelatedProductionRecordID = productionRecordId,
+                    UserID = GetCurrentUserId(),
+                    CreatedAt = DateTime.Now
+                });
             }
+            _context.SaveChanges();
+        }
 
-            string from = NormalizeUnit(recipeUnit);
-            string to = NormalizeUnit(stockUnit);
+        private void RestoreStockForProduction(int companyId, int foodId, int portions, int? productionRecordId)
+        {
+            var recipes = _context.RecipeIngredients
+                .Where(r => r.CompanyID == companyId && r.FoodID == foodId)
+                .ToList();
 
-            if (from == to) return amount;
-            if (from == "kg" && to == "g") return amount * 1000;
-            if (from == "g" && to == "kg") return amount / 1000;
-            if (from == "lt" && to == "ml") return amount * 1000;
-            if (from == "ml" && to == "lt") return amount / 1000;
+            foreach (var recipe in recipes)
+            {
+                var stockItem = _context.StockItems.FirstOrDefault(s => s.ID == recipe.StockItemID && s.CompanyID == companyId);
+                if (stockItem == null)
+                    continue; 
 
-            throw new Exception($"'{recipeUnit}' biriminden '{stockUnit}' birimine dönüşüm desteklenmemektedir.");
+                decimal totalToRestore = recipe.RequiredQuantity * portions;
+                decimal amountToRestore = UnitHelper.Convert(totalToRestore, recipe.Unit, stockItem.Unit);
+
+                decimal newQuantity = (stockItem.CurrentQuantity ?? 0) + amountToRestore;
+                stockItem.CurrentQuantity = newQuantity;
+
+                _context.StockMovements.Add(new StockMovement
+                {
+                    CompanyID = companyId,
+                    StockItemID = stockItem.ID,
+                    ChangeAmount = amountToRestore,
+                    ResultingQuantity = newQuantity,
+                    Reason = "Üretim İptali (İade)",
+                    RelatedProductionRecordID = productionRecordId,
+                    UserID = GetCurrentUserId(),
+                    CreatedAt = DateTime.Now
+                });
+            }
+            _context.SaveChanges();
         }
     }
 }
-*/

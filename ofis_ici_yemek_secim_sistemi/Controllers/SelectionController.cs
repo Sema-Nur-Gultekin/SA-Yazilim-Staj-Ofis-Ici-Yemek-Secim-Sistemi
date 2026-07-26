@@ -1,4 +1,5 @@
-﻿using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,24 +12,24 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
         [NonAction]
         public override ActionResult Index() => null;
 
-   
-        public ActionResult SelectionManagement(DateTime? date = null, string mealType = "", string search = "")
+    
+        public ActionResult SelectionManagement(DateTime? dateFrom = null, DateTime? dateTo = null, string mealType = "", string search = "")
         {
             int companyId = GetCurrentUserCompanyId();
 
-           
             var menuItemsQuery = _context.MenuItems
                 .Where(m => m.CompanyID == companyId && m.IsActive);
 
-            if (date.HasValue)
-                menuItemsQuery = menuItemsQuery.Where(m => m.Date == date.Value);
+            if (dateFrom.HasValue)
+                menuItemsQuery = menuItemsQuery.Where(m => m.Date >= dateFrom.Value);
+            if (dateTo.HasValue)
+                menuItemsQuery = menuItemsQuery.Where(m => m.Date <= dateTo.Value);
             if (!string.IsNullOrWhiteSpace(mealType))
                 menuItemsQuery = menuItemsQuery.Where(m => m.MealType == mealType);
 
             var menuItems = menuItemsQuery.ToList();
             var menuItemIds = menuItems.Select(m => m.ID).ToList();
 
-          
             var selections = _context.Selections
                 .Where(s => s.CompanyID == companyId && menuItemIds.Contains(s.MenuItemID))
                 .ToList();
@@ -48,12 +49,10 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 m => (Date: m.Date, MealType: m.MealType, FoodID: m.FoodID)
             );
 
-      
             ViewBag.UserNames = userNames;
             ViewBag.FoodNames = foodNamesDict;
             ViewBag.MenuDict = menuDict;
 
-         
             if (!string.IsNullOrWhiteSpace(search))
             {
                 string term = search.Trim().ToLower();
@@ -66,18 +65,59 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 }).ToList();
             }
 
+            ViewBag.MealTypes = _context.MealTypes
+                .Where(m => m.CompanyID == companyId && m.IsActive)
+                .OrderBy(m => m.DisplayOrder.HasValue ? 0 : 1)
+                .ThenBy(m => m.DisplayOrder)
+                .ToList();
+
+            DateTime nonSelectorsFrom = dateFrom ?? DateTime.Today;
+            DateTime nonSelectorsTo = dateTo ?? nonSelectorsFrom;
+
+            
+            bool hasMealTypeFilter = !string.IsNullOrWhiteSpace(mealType);
+
+            var rangeMenuItemIds = _context.MenuItems
+                .Where(m => m.CompanyID == companyId && m.IsActive
+                            && m.Date >= nonSelectorsFrom && m.Date <= nonSelectorsTo
+                            && (!hasMealTypeFilter || m.MealType == mealType))
+                .Select(m => m.ID)
+                .ToList();
+
+            bool hasMenuInRange = rangeMenuItemIds.Any();
+
+            List<User> nonSelectors = new List<User>();
+            if (hasMenuInRange)
+            {
+                var selectedUserIds = _context.Selections
+                    .Where(s => s.CompanyID == companyId && rangeMenuItemIds.Contains(s.MenuItemID))
+                    .Select(s => s.UserID)
+                    .Distinct()
+                    .ToList();
+
+                nonSelectors = _context.Users
+                    .Where(u => u.CompanyID == companyId && u.Role == "User" && u.IsActive && !selectedUserIds.Contains(u.ID))
+                    .OrderBy(u => u.Name)
+                    .ToList();
+            }
+
+            ViewBag.NonSelectors = nonSelectors;
+            ViewBag.NonSelectorsFrom = nonSelectorsFrom;
+            ViewBag.NonSelectorsTo = nonSelectorsTo;
+            ViewBag.HasMenuInRange = hasMenuInRange;
+
             if (Request.IsAjaxRequest())
             {
                 return PartialView("_SelectionList", selections);
             }
 
-            ViewBag.Date = date;
+            ViewBag.DateFrom = dateFrom;
+            ViewBag.DateTo = dateTo;
             ViewBag.MealType = mealType;
             ViewBag.Search = search;
 
             return View(selections);
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -104,6 +144,8 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
 
             _context.Selections.RemoveRange(selectionsToDelete);
             _context.SaveChanges();
+
+            ActivityLogger.LogAndSave(_context, companyId, GetCurrentUserId(), $"Personel Seçimleri Silindi ({selectionsToDelete.Count} kayıt)");
 
             return Json(new { success = true, message = $"{selectionsToDelete.Count} seçim başarıyla silindi." });
         }

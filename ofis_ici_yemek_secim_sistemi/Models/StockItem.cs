@@ -21,6 +21,10 @@ namespace ofis_ici_yemek_secim_sistemi.Models
         [MaxLength(20)]
         public string Unit { get; set; } 
 
+ 
+        [MaxLength(50)]
+        public string Category { get; set; }
+
         public decimal? CurrentQuantity { get; set; }
 
         public decimal? MinimumQuantity { get; set; }

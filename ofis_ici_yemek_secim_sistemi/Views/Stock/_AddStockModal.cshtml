@@ -1,4 +1,8 @@
-﻿@model ofis_ici_yemek_secim_sistemi.Models.StockItem
+@model ofis_ici_yemek_secim_sistemi.Models.StockItem
+@{
+    var unitGroups = ofis_ici_yemek_secim_sistemi.Services.UnitHelper.AllUnits.GroupBy(u => u.Category);
+    string[] categories = { "Et & Tavuk & Balık", "Süt Ürünleri & Yumurta", "Sebze & Meyve", "Kuru Gıda & Bakliyat", "Baharat & Sos", "İçecek", "Temizlik & Sarf Malzeme", "Diğer" };
+}
 
 <form action="@Url.Action("AddStock", "Stock")" method="post">
     @Html.AntiForgeryToken()
@@ -9,26 +13,42 @@
     </div>
 
     <div class="mb-3">
-        <label class="form-label fw-semibold">Birim <span class="text-danger">*</span></label>
-        <select name="Unit" class="form-select py-2" required style="border-radius:8px;">
-            <option value="">— Birim Seçin —</option>
-            <option value="kg">Kilogram (kg)</option>
-            <option value="lt">Litre (lt)</option>
-            <option value="adet">Adet</option>
-            <option value="paket">Paket</option>
-            <option value="gr">Gram (gr)</option>
-            <option value="ml">Mililitre (ml)</option>
+        <label class="form-label fw-semibold">Kategori</label>
+        <select name="Category" class="form-select py-2" style="border-radius:8px;">
+            <option value="">— Kategori Seçin (opsiyonel) —</option>
+            @foreach (var cat in categories)
+            {
+                <option value="@cat">@cat</option>
+            }
         </select>
     </div>
 
     <div class="mb-3">
+        <label class="form-label fw-semibold">Birim <span class="text-danger">*</span></label>
+        <select name="Unit" class="form-select py-2" required style="border-radius:8px;">
+            <option value="">— Birim Seçin —</option>
+            @foreach (var group in unitGroups)
+            {
+                <optgroup label="@group.Key">
+                    @foreach (var unit in group)
+                    {
+                        <option value="@unit.Value">@unit.Label</option>
+                    }
+                </optgroup>
+            }
+        </select>
+     
+    </div>
+
+    <div class="mb-3">
         <label class="form-label fw-semibold">Başlangıç Stok Miktarı</label>
-        <input type="number" name="CurrentQuantity" class="form-control py-2" step="0.01" placeholder="Örn: 50" style="border-radius:8px;" />
+        <input type="number" name="CurrentQuantity" class="form-control py-2" step="0.01" min="0" placeholder="Örn: 50" style="border-radius:8px;" />
     </div>
 
     <div class="mb-4">
         <label class="form-label fw-semibold">Minimum Stok Seviyesi</label>
-        <input type="number" name="MinimumQuantity" class="form-control py-2" step="0.01" placeholder="Örn: 5" style="border-radius:8px;" />
+        <input type="number" name="MinimumQuantity" class="form-control py-2" step="0.01" min="0" placeholder="Örn: 5" style="border-radius:8px;" />
+        <div class="form-text">Stok bu seviyenin altına düşünce listede "Düşük Stok" uyarısı gösterilir.</div>
     </div>
 
     <div class="d-flex justify-content-end gap-2">

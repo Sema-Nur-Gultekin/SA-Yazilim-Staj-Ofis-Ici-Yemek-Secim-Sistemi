@@ -1,4 +1,4 @@
-﻿<style>
+<style>
     .admin-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -102,92 +102,271 @@
             border-color: #3b82f6;
             color: #3b82f6;
         }
+
+   
+    .stat-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.25rem;
+    }
+
+    .stat-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.1;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 0.15rem;
+    }
+
+    .top-actions-card {
+        background: white;
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .top-action-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.88rem;
+    }
+
+        .top-action-row:last-child {
+            border-bottom: none;
+        }
+
+    
+    .dashboard-two-col {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 1.25rem;
+    }
+
+    @@media (max-width: 900px) {
+        .dashboard-two-col {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    
+    .selection-rate-ring {
+        --rate: 0;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: conic-gradient(#22c55e calc(var(--rate) * 1%), #e2e8f0 0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+        .selection-rate-ring::before {
+            content: '';
+            position: absolute;
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .selection-rate-ring span {
+            position: relative;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
 </style>
 
-<div class="admin-grid">
- 
-    <div class="admin-card">
-        <div class="card-icon icon-blue">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-        </div>
-        <h3 class="card-title">Menü Yönetimi</h3>
-        <p class="card-text">Haftalık yemek menülerini ekleyin ve yönetin.</p>
-        <a href="@Url.Action("MenuManagement", "Menu")" class="btn-admin btn-blue">Menülere Git</a>
+@{
+    int todayActionCount = ViewBag.TodayActionCount ?? 0;
+    int totalFoodCount = ViewBag.TotalFoodCount ?? 0;
+    int totalUserCount = ViewBag.TotalUserCount ?? 0;
+    int totalMenuTodayCount = ViewBag.TotalMenuTodayCount ?? 0;
+    var topActions = ViewBag.TopActions as List<ofis_ici_yemek_secim_sistemi.Controllers.ActionStat>;
+}
+
+@{
+    var setupGaps = ViewBag.SetupGaps as List<ofis_ici_yemek_secim_sistemi.Controllers.SetupGap>;
+}
+
+@if (setupGaps != null && setupGaps.Any())
+{
+    <div class="alert alert-warning shadow-sm no-print mb-3" style="border-radius:10px;">
+        <div class="fw-bold mb-1"><i class="fa-solid fa-triangle-exclamation me-2"></i>Bugünün menü kurulumunda eksikler var</div>
+        <ul class="mb-0 ps-4 small">
+            @foreach (var gap in setupGaps)
+            {
+                <li>@gap.Label <a href="@gap.ActionUrl" class="fw-semibold">@gap.ActionText</a></li>
+            }
+        </ul>
     </div>
+}
 
-    <div class="admin-card">
-        <div class="card-icon icon-green">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-                <path d="M18 20V10"></path>
-                <path d="M12 20V4"></path>
-                <path d="M6 20v-6"></path>
-            </svg>
+<div class="stat-cards-grid">
+    <div class="stat-card">
+        <div class="stat-icon icon-blue"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <div>
+            <div class="stat-value">@todayActionCount</div>
+            <div class="stat-label">Bugün Yapılan İşlemler</div>
         </div>
-        <h3 class="card-title">Yemek Kataloğu</h3>
-        <p class="card-text">Yemek tanımlarını ve tarifleri yönetin.</p>
-        <a href="@Url.Action("FoodManagement", "Food")" class="btn-admin btn-blue">Kataloğa Git</a>
     </div>
-
-  
-    <div class="admin-card">
-        <div class="card-icon icon-orange">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
+    <div class="stat-card">
+        <div class="stat-icon icon-green"><i class="fa-solid fa-bowl-food"></i></div>
+        <div>
+            <div class="stat-value">@totalFoodCount</div>
+            <div class="stat-label">Aktif Yemek Sayısı</div>
         </div>
-        <h3 class="card-title">Kategori Yönetimi</h3>
-        <p class="card-text">Yemek kategorilerini düzenleyin.</p>
-        <a href="@Url.Action("CategoryManagement", "Category")" class="btn-admin btn-blue">Kategorilere Git</a>
     </div>
-
-  
-    <div class="admin-card">
-        <div class="card-icon icon-green">
-            <i class="fa-solid fa-clipboard-list" style="font-size: 32px;"></i>
+    <div class="stat-card">
+        <div class="stat-icon icon-purple"><i class="fa-solid fa-users"></i></div>
+        <div>
+            <div class="stat-value">@totalUserCount</div>
+            <div class="stat-label">Kayıtlı Personel</div>
         </div>
-        <h3 class="card-title">Personel Seçimleri</h3>
-        <p class="card-text">Çalışanların yemek seçimlerini görüntüleyin.</p>
-        <a href="@Url.Action("SelectionManagement", "Selection")" class="btn-admin btn-outline">Seçimleri Gör</a>
     </div>
-
-  
-    <div class="admin-card">
-        <div class="card-icon icon-orange">
-            <i class="fa-solid fa-star" style="font-size: 32px;"></i>
+    <div class="stat-card">
+        <div class="stat-icon icon-orange"><i class="fa-solid fa-calendar-day"></i></div>
+        <div>
+            <div class="stat-value">@totalMenuTodayCount</div>
+            <div class="stat-label">Bugünkü Menü Kalemi</div>
         </div>
-        <h3 class="card-title">Değerlendirmeler</h3>
-        <p class="card-text">Yemek puanlamalarını ve yorumları inceleyin.</p>
-        <a href="@Url.Action("RatingManagement", "Rating")" class="btn-admin btn-outline">Yorumları Gör</a>
-    </div>
-
-
-    <div class="admin-card">
-        <div class="card-icon icon-purple">
-            <i class="fa-solid fa-users" style="font-size: 32px;"></i>
-        </div>
-        <h3 class="card-title">Kullanıcı Yönetimi</h3>
-        <p class="card-text">Şirketinize kayıtlı kullanıcıları görüntüleyin ve yönetin.</p>
-        <a href="@Url.Action("UserManagement", "User")" class="btn-admin btn-blue">Kullanıcıları Yönet</a>
-    </div>
-
-    <div class="admin-card">
-        <div class="card-icon icon-green">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-                <path d="M18 20V10"></path>
-                <path d="M12 20V4"></path>
-                <path d="M6 20v-6"></path>
-            </svg>
-        </div>
-        <h3 class="card-title">Gün Sonu Raporu</h3>
-        <p class="card-text">Günlük seçimleri görüntüleyin ve Excel'e aktarın.</p>
-        <a href="@Url.Action("DailyReport", "Report")" class="btn-admin btn-blue">Raporu Gör</a>
     </div>
 </div>
+
+<div class="top-actions-card mb-2">
+    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-ranking-star text-warning me-1"></i>En Çok Kullanılan İşlemler <span class="text-muted fw-normal small">(son 30 gün)</span></h6>
+    @{
+        bool hasTopActions = false;
+        if (topActions != null)
+        {
+            foreach (var action in topActions)
+            {
+                hasTopActions = true;
+                <div class="top-action-row">
+                    <span class="text-dark">@action.ActionName</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="border-radius:6px;">@action.Count</span>
+                </div>
+            }
+        }
+    }
+    @if (!hasTopActions)
+    {
+        <p class="text-muted small mb-0">Henüz kaydedilmiş bir işlem yok.</p>
+    }
+</div>
+
+@{
+    var dailyStats = ViewBag.DailyStats as List<ofis_ici_yemek_secim_sistemi.Controllers.DailyActivityStat>;
+    var recentLogs = ViewBag.RecentLogs as List<ofis_ici_yemek_secim_sistemi.Controllers.RecentLogEntry>;
+    int selectedTodayCount = ViewBag.SelectedTodayCount ?? 0;
+    int selectionRatePercent = totalUserCount > 0 ? (int)System.Math.Round(100.0 * selectedTodayCount / totalUserCount) : 0;
+}
+
+<div class="dashboard-two-col mb-2">
+    <div class="top-actions-card">
+        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-column text-primary me-1"></i>Son 7 Gün İşlem Yoğunluğu</h6>
+        <canvas id="weeklyActivityChart" height="140"></canvas>
+    </div>
+
+    <div class="top-actions-card">
+        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-utensils text-success me-1"></i>Bugün Seçim Yapan Personel</h6>
+        <div class="d-flex align-items-center gap-3">
+            <div class="selection-rate-ring" style="--rate: @selectionRatePercent;">
+                <span>@selectionRatePercent%</span>
+            </div>
+            <div>
+                <div class="fw-bold text-dark" style="font-size:1.1rem;">@selectedTodayCount / @totalUserCount</div>
+                <div class="text-muted small">personel bugünkü menüsünden seçim yaptı</div>
+                @if (totalUserCount > 0 && selectedTodayCount < totalUserCount)
+                {
+                    <a href="@Url.Action("SelectionManagement", "Selection")" class="small fw-semibold">Seçmeyenleri gör →</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="top-actions-card mb-2">
+    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clock-rotate-left text-muted me-1"></i>Son İşlemler</h6>
+    @if (recentLogs != null && recentLogs.Any())
+    {
+        foreach (var log in recentLogs)
+        {
+            <div class="top-action-row">
+                <span class="text-dark"><strong>@log.UserName</strong> — @log.ActionName</span>
+                <span class="text-muted small">@log.ActionTime.ToString("dd.MM.yyyy HH:mm")</span>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-muted small mb-0">Henüz kaydedilmiş bir işlem yok.</p>
+    }
+</div>
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+        $(function () {
+            var ctx = document.getElementById('weeklyActivityChart');
+            if (!ctx) return;
+
+            var labels = [@Html.Raw(string.Join(",", (dailyStats ?? new List<ofis_ici_yemek_secim_sistemi.Controllers.DailyActivityStat>()).Select(d => "'" + d.Date.ToString("dd.MM") + "'")))];
+            var data = [@Html.Raw(string.Join(",", (dailyStats ?? new List<ofis_ici_yemek_secim_sistemi.Controllers.DailyActivityStat>()).Select(d => d.Count)))];
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'İşlem Sayısı',
+                        data: data,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6,
+                        maxBarThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            });
+        });
+    </script>
+}
+

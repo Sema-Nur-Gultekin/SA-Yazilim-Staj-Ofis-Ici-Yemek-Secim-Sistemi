@@ -1,5 +1,5 @@
-﻿/*
 using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Services;
 using System.Linq;
 using System.Web.Mvc;
 
@@ -53,9 +53,38 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = errors });
             }
 
+            if (model.RequiredQuantity <= 0)
+            {
+                return Json(new { success = false, message = "Gereken miktar sıfırdan büyük olmalıdır." });
+            }
+
+
+            var targetStockItem = _context.StockItems.FirstOrDefault(s => s.ID == model.StockItemID && s.CompanyID == companyId);
+            if (targetStockItem == null)
+            {
+                return Json(new { success = false, message = "Seçilen stok kalemi bulunamadı." });
+            }
+            if (!UnitHelper.SameCategory(model.Unit, targetStockItem.Unit))
+            {
+                string recipeCat = UnitHelper.GetCategory(model.Unit) ?? "bilinmeyen";
+                string stockCat = UnitHelper.GetCategory(targetStockItem.Unit) ?? "bilinmeyen";
+                return Json(new { success = false, message = $"Birim uyuşmazlığı: reçete birimi '{model.Unit}' ({recipeCat}) ile '{targetStockItem.Name}' malzemesinin birimi '{targetStockItem.Unit}' ({stockCat}) farklı ölçü kategorilerinde. Aynı kategoriden bir birim seçin." });
+            }
+
+
+            bool duplicate = _context.RecipeIngredients.Any(r =>
+                r.CompanyID == companyId && r.FoodID == model.FoodID && r.StockItemID == model.StockItemID);
+            if (duplicate)
+            {
+                return Json(new { success = false, message = "Bu yemek için bu malzeme zaten reçetede tanımlı. Lütfen mevcut kaydı düzenleyin." });
+            }
+
             model.CompanyID = companyId;
             _context.RecipeIngredients.Add(model);
             _context.SaveChanges();
+
+            ActivityLogger.LogAndSave(_context, companyId, GetCurrentUserId(), "Reçete Eklendi", model.ID);
+
             return Json(new { success = true, message = "Reçete eklendi." });
         }
 
@@ -84,15 +113,42 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = errors });
             }
 
+            if (model.RequiredQuantity <= 0)
+            {
+                return Json(new { success = false, message = "Gereken miktar sıfırdan büyük olmalıdır." });
+            }
+
             var recipe = _context.RecipeIngredients.FirstOrDefault(r => r.ID == id && r.CompanyID == companyId);
             if (recipe == null)
                 return Json(new { success = false, message = "Reçete bulunamadı." });
+
+
+            var targetStockItem = _context.StockItems.FirstOrDefault(s => s.ID == model.StockItemID && s.CompanyID == companyId);
+            if (targetStockItem == null)
+            {
+                return Json(new { success = false, message = "Seçilen stok kalemi bulunamadı." });
+            }
+            if (!UnitHelper.SameCategory(model.Unit, targetStockItem.Unit))
+            {
+                string recipeCat = UnitHelper.GetCategory(model.Unit) ?? "bilinmeyen";
+                string stockCat = UnitHelper.GetCategory(targetStockItem.Unit) ?? "bilinmeyen";
+                return Json(new { success = false, message = $"Birim uyuşmazlığı: reçete birimi '{model.Unit}' ({recipeCat}) ile '{targetStockItem.Name}' malzemesinin birimi '{targetStockItem.Unit}' ({stockCat}) farklı ölçü kategorilerinde. Aynı kategoriden bir birim seçin." });
+            }
+
+   
+            bool duplicate = _context.RecipeIngredients.Any(r =>
+                r.CompanyID == companyId && r.ID != id && r.FoodID == model.FoodID && r.StockItemID == model.StockItemID);
+            if (duplicate)
+            {
+                return Json(new { success = false, message = "Bu yemek için bu malzeme zaten başka bir reçete satırında tanımlı." });
+            }
 
             recipe.FoodID = model.FoodID;
             recipe.StockItemID = model.StockItemID;
             recipe.RequiredQuantity = model.RequiredQuantity;
             recipe.Unit = model.Unit;
 
+            ActivityLogger.Log(_context, companyId, GetCurrentUserId(), "Reçete Düzenlendi", recipe.ID);
             _context.SaveChanges();
             return Json(new { success = true, message = "Reçete güncellendi." });
         }
@@ -103,13 +159,14 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
         {
             int companyId = GetCurrentUserCompanyId();
             var recipe = _context.RecipeIngredients.FirstOrDefault(r => r.ID == id && r.CompanyID == companyId);
-            if (recipe != null)
-            {
-                _context.RecipeIngredients.Remove(recipe);
-                _context.SaveChanges();
-            }
-            return RedirectToAction("RecipeManagement");
+            if (recipe == null)
+                return Json(new { success = false, message = "Reçete bulunamadı." });
+
+            _context.RecipeIngredients.Remove(recipe);
+            ActivityLogger.Log(_context, companyId, GetCurrentUserId(), "Reçete Silindi", id);
+            _context.SaveChanges();
+
+            return Json(new { success = true, message = "Reçete kaydı silindi." });
         }
     }
 }
-*/

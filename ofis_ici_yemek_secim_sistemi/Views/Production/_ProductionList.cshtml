@@ -1,11 +1,11 @@
-﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.ProductionRecord>
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.ProductionRecord>
 @{
     var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
 }
 
 <div class="card shadow-sm border-0" style="border-radius:12px;">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table id="productionTable" class="table table-hover align-middle mb-0 table-datatable" style="width:100%;">
             <thead class="table-light">
                 <tr>
                     <th style="padding:1rem 1.5rem;">Tarih</th>
@@ -15,7 +15,7 @@
                     <th>Üretilen</th>
                     <th>Tüketilen</th>
                     <th>Not</th>
-                    <th style="min-width:120px;">İşlemler</th>
+                    <th style="min-width:100px;">İşlemler</th>
                 </tr>
             </thead>
             <tbody>
@@ -35,17 +35,21 @@
                             <td>
                                 <div class="d-flex gap-2">
                                     <a href="@Url.Action("EditProduction", "Production", new { id = item.ID })"
-                                       class="btn btn-sm btn-outline-primary btn-edit-ajax"
+                                       class="btn btn-outline-primary btn-row-action btn-edit-ajax"
                                        data-title="Üretim Kaydı Düzenle"
                                        title="Düzenle">
                                         <i class="fa-solid fa-pen-to-square"></i>
+                                        <span class="btn-action-text">Düzenle</span>
                                     </a>
                                     @using (Html.BeginForm("DeleteProduction", "Production", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
                                     {
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Sil"
-                                                onclick="return confirm('Bu üretim kaydını silmek istediğinize emin misiniz?')">
+                                        <button type="button"
+                                                class="btn btn-outline-primary btn-row-action btn-delete-production"
+                                                data-name="@foodName"
+                                                title="Sil">
                                             <i class="fa-solid fa-trash"></i>
+                                            <span class="btn-action-text">Sil</span>
                                         </button>
                                     }
                                 </div>

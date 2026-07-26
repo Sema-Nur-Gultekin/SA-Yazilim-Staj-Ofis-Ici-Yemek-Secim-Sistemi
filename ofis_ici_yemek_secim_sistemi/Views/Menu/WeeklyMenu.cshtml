@@ -1,0 +1,180 @@
+@model List<ofis_ici_yemek_secim_sistemi.Models.MenuItem>
+@{
+    ViewBag.Title = "Haftalık Menü Görünümü";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
+    var foodImages = ViewBag.FoodImages as Dictionary<int, string>;
+    var mealOrderMap = ViewBag.MealOrderMap as Dictionary<string, int> ?? new Dictionary<string, int>();
+    DateTime weekStart = ViewBag.WeekStart;
+    DateTime weekEnd = ViewBag.WeekEnd;
+    DateTime today = ViewBag.Today != null ? (DateTime)ViewBag.Today : DateTime.Today;
+
+    var dateGroups = Model
+        .GroupBy(m => m.Date)
+        .OrderBy(g => g.Key)
+        .Select(g => new
+        {
+            Date = g.Key,
+            MealGroups = g.GroupBy(m => m.MealType)
+                          .OrderBy(mg => mealOrderMap.ContainsKey(mg.Key) ? mealOrderMap[mg.Key] : int.MaxValue)
+                          .Select(mg => new { MealType = mg.Key, Items = mg.ToList() })
+        }).ToList();
+}
+
+<style>
+    
+    .admin-week-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .admin-day-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+
+        .admin-day-card.is-today {
+            outline: 2px solid var(--primary-color, #3b82f6);
+            outline-offset: -2px;
+        }
+
+    .admin-day-header {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        padding: 1rem 1.25rem;
+        font-weight: 700;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .admin-day-name {
+        font-size: 0.85rem;
+        opacity: 0.9;
+        font-weight: 500;
+    }
+
+    .admin-meal-section {
+        padding: 0.6rem 1.1rem 0.9rem;
+    }
+
+    .admin-meal-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1e293b;
+        background: #f8fafc;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        margin: 0.6rem 0 0.6rem;
+    }
+
+    .admin-meal-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+        .admin-meal-item:last-child {
+            border-bottom: none;
+        }
+
+    .admin-food-thumb {
+        width: 34px;
+        height: 34px;
+        object-fit: cover;
+        border-radius: 7px;
+        border: 1px solid #e2e8f0;
+        flex-shrink: 0;
+    }
+
+    .admin-food-name {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-weight: 500;
+        color: #1e293b;
+        word-break: break-word;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold text-dark m-0">Haftalık Menü Görünümü</h3>
+        <p class="text-muted small m-0">@weekStart.ToString("dd MMMM") – @weekEnd.ToString("dd MMMM yyyy") haftasının tüm menüsü tek bakışta.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("WeeklyMenu", "Menu", new { weekOf = ViewBag.PrevWeek })" class="btn btn-outline-secondary btn-print no-print" title="Önceki hafta">
+            <i class="fa-solid fa-chevron-left"></i>
+        </a>
+        <a href="@Url.Action("WeeklyMenu", "Menu")" class="btn btn-outline-secondary btn-print no-print" title="Bu hafta">Bu Hafta</a>
+        <a href="@Url.Action("WeeklyMenu", "Menu", new { weekOf = ViewBag.NextWeek })" class="btn btn-outline-secondary btn-print no-print" title="Sonraki hafta">
+            <i class="fa-solid fa-chevron-right"></i>
+        </a>
+        <button type="button" class="btn btn-outline-secondary btn-print no-print" onclick="printPage()" title="Yazdır">
+            <i class="fa-solid fa-print"></i> Yazdır
+        </button>
+    </div>
+</div>
+
+@if (!dateGroups.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fa-solid fa-calendar-xmark fs-1 mb-2 d-block"></i>
+        Bu hafta için henüz bir menü planlanmamış.
+    </div>
+}
+else
+{
+    <div class="admin-week-grid">
+        @foreach (var day in dateGroups)
+        {
+            <div class="admin-day-card @(day.Date == today ? "is-today" : "")">
+                <div class="admin-day-header">
+                    <span>@day.Date.ToString("dd MMMM yyyy")</span>
+                    <span class="admin-day-name">@day.Date.ToString("dddd")</span>
+                </div>
+                <div class="admin-meal-section">
+                    @foreach (var meal in day.MealGroups)
+                    {
+                        <div class="admin-meal-title">@meal.MealType</div>
+                        foreach (var item in meal.Items)
+                        {
+                            string foodName = foodNames != null && foodNames.ContainsKey(item.FoodID) ? foodNames[item.FoodID] : "?";
+                            string foodImage = foodImages != null && foodImages.ContainsKey(item.FoodID) ? foodImages[item.FoodID] : null;
+
+                            <div class="admin-meal-item">
+                                @if (!string.IsNullOrWhiteSpace(foodImage))
+                                {
+                                    <img src="@Url.Content(foodImage)" alt="@foodName" class="admin-food-thumb" />
+                                }
+                                else
+                                {
+                                    <div class="admin-food-thumb d-flex align-items-center justify-content-center bg-light text-muted">
+                                        <i class="fa-solid fa-utensils" style="font-size:0.8rem;"></i>
+                                    </div>
+                                }
+                                <span class="admin-food-name">
+                                    @foodName
+                                    @if (item.PlannedPortion.HasValue)
+                                    {
+                                        <span class="text-muted small">(Kontenjan: @item.PlannedPortion)</span>
+                                    }
+                                </span>
+                                @if (!item.IsActive)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="border-radius:6px;font-size:0.7rem;">Pasif</span>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

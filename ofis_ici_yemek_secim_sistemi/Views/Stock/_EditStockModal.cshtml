@@ -1,4 +1,8 @@
-﻿@model ofis_ici_yemek_secim_sistemi.Models.StockItem
+@model ofis_ici_yemek_secim_sistemi.Models.StockItem
+@{
+    var unitGroups = ofis_ici_yemek_secim_sistemi.Services.UnitHelper.AllUnits.GroupBy(u => u.Category);
+    string[] categories = { "Et & Tavuk & Balık", "Süt Ürünleri & Yumurta", "Sebze & Meyve", "Kuru Gıda & Bakliyat", "Baharat & Sos", "İçecek", "Temizlik & Sarf Malzeme", "Diğer" };
+}
 
 <form action="@Url.Action("EditStock", "Stock", new { id = Model.ID })" method="post">
     @Html.AntiForgeryToken()
@@ -9,26 +13,42 @@
     </div>
 
     <div class="mb-3">
-        <label class="form-label fw-semibold">Birim <span class="text-danger">*</span></label>
-        <select name="Unit" class="form-select py-2" required style="border-radius:8px;">
-            <option value="kg" @(Model.Unit == "kg" ? "selected" : "")>Kilogram (kg)</option>
-            <option value="lt" @(Model.Unit == "lt" ? "selected" : "")>Litre (lt)</option>
-            <option value="adet" @(Model.Unit == "adet" ? "selected" : "")>Adet</option>
-            <option value="paket" @(Model.Unit == "paket" ? "selected" : "")>Paket</option>
-            <option value="gr" @(Model.Unit == "gr" ? "selected" : "")>Gram (gr)</option>
-            <option value="ml" @(Model.Unit == "ml" ? "selected" : "")>Mililitre (ml)</option>
+        <label class="form-label fw-semibold">Kategori</label>
+        <select name="Category" class="form-select py-2" style="border-radius:8px;">
+            <option value="">— Kategori Seçin (opsiyonel) —</option>
+            @foreach (var cat in categories)
+            {
+                <option value="@cat" @(Model.Category == cat ? "selected" : "")>@cat</option>
+            }
         </select>
     </div>
 
     <div class="mb-3">
+        <label class="form-label fw-semibold">Birim <span class="text-danger">*</span></label>
+        <select name="Unit" class="form-select py-2" required style="border-radius:8px;">
+            @foreach (var group in unitGroups)
+            {
+                <optgroup label="@group.Key">
+                    @foreach (var unit in group)
+                    {
+                        <option value="@unit.Value" @(Model.Unit == unit.Value ? "selected" : "")>@unit.Label</option>
+                    }
+                </optgroup>
+            }
+        </select>
+        <div class="form-text">Bu malzeme bir reçetede kullanılıyorsa birim değiştirilemez.</div>
+    </div>
+
+    <div class="mb-3">
         <label class="form-label fw-semibold">Mevcut Stok Miktarı</label>
-        <input type="number" name="CurrentQuantity" class="form-control py-2" step="0.01"
-               value="@(Model.CurrentQuantity.HasValue ? Model.CurrentQuantity.Value.ToString("F2") : "")" style="border-radius:8px;" />
+        <input type="text" class="form-control py-2 bg-light" readonly
+               value="@((Model.CurrentQuantity.HasValue ? Model.CurrentQuantity.Value.ToString("N2") : "0")) @Model.Unit" style="border-radius:8px;" />
+        <div class="form-text">Stok miktarı burada değiştirilemez — kayıt altına almak için listeden <strong>"Stok Girişi Yap"</strong> butonunu kullanın.</div>
     </div>
 
     <div class="mb-3">
         <label class="form-label fw-semibold">Minimum Stok Seviyesi</label>
-        <input type="number" name="MinimumQuantity" class="form-control py-2" step="0.01"
+        <input type="number" name="MinimumQuantity" class="form-control py-2" step="0.01" min="0"
                value="@(Model.MinimumQuantity.HasValue ? Model.MinimumQuantity.Value.ToString("F2") : "")" style="border-radius:8px;" />
     </div>
 

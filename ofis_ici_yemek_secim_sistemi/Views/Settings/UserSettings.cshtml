@@ -17,6 +17,11 @@
                         <div class="alert alert-success"><i class="fa-solid fa-check-circle"></i> @ViewBag.SuccessMessage</div>
                     }
 
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> @ViewBag.ErrorMessage</div>
+                    }
+
                     <form action="@Url.Action("UserSettings", "Settings")" method="post">
                         @Html.AntiForgeryToken()
                         <div class="mb-3">
@@ -55,13 +60,13 @@
                     @if (User.IsInRole("User"))
                     {
                         <hr class="my-4" />
-                        <div class="alert alert-danger d-flex justify-content-between align-items-center">
+                        <div class="alert alert-danger d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div>
-                                <strong>Dikkat:</strong> Hesabınızı kalıcı olarak silmek istiyorsanız bu işlemi geri alamazsınız.
+                                <strong>Dikkat:</strong> Hesabınızı sildiğinizde artık sisteme giriş yapamazsınız. Tekrar erişim için sistem yöneticinizle iletişime geçmeniz gerekir.
                             </div>
-                            <form action="@Url.Action("DeleteUserAccount", "Settings")" method="post" onsubmit="return confirm('Hesabınızı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz!');">
+                            <form action="@Url.Action("DeleteUserAccount", "Settings")" method="post" id="deleteAccountForm" data-no-submit-guard="true">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-danger btn-sm">Hesabımı Sil</button>
+                                <button type="submit" class="btn btn-danger btn-sm" id="deleteAccountBtn">Hesabımı Sil</button>
                             </form>
                         </div>
                     }
@@ -71,3 +76,32 @@
         </div>
     </div>
 </div>
+
+<script>
+    
+    var deleteAccountForm = document.getElementById('deleteAccountForm');
+    if (deleteAccountForm) {
+        deleteAccountForm.addEventListener('submit', function (e) {
+            if (deleteAccountForm.dataset.confirmed === 'true') return; 
+            e.preventDefault();
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: 'Hesabınızı silmek istediğinize emin misiniz? Bu işlemden sonra sisteme giriş yapamazsınız.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Evet, Hesabımı Sil',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var btn = document.getElementById('deleteAccountBtn');
+                    btn.disabled = true;
+                    btn.innerHTML = 'Siliniyor...';
+                    deleteAccountForm.dataset.confirmed = 'true';
+                    deleteAccountForm.submit();
+                }
+            });
+        });
+    }
+</script>

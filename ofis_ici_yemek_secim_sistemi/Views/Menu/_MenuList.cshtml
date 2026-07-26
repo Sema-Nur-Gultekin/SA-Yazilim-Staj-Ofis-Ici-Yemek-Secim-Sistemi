@@ -1,7 +1,9 @@
-﻿@model List<ofis_ici_yemek_secim_sistemi.Controllers.MenuController.MenuGroupViewModel>
+@model List<ofis_ici_yemek_secim_sistemi.Controllers.MenuController.MenuGroupViewModel>
 @{
     var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
     var foodCategoryNames = ViewBag.FoodCategoryNames as Dictionary<int, string>;
+    bool hasMealTypes = ViewBag.HasMealTypes == true;
+    bool hasFoodsGlobal = ViewBag.HasFoodsGlobal == true;
 }
 
 <style>
@@ -36,17 +38,10 @@
         border-radius: 16px 16px 0 0;
     }
 
-    .header-sabah {
-        background: linear-gradient(135deg, #ffedd5, #fed7aa);
-    }
-
-    .header-ogle {
-        background: linear-gradient(135deg, #e0f2fe, #bae6fd);
-    }
-
-    .header-aksam {
-        background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
-    }
+    .header-sabah { background: linear-gradient(135deg, #ffedd5, #fed7aa); }
+    .header-ogle { background: linear-gradient(135deg, #e0f2fe, #bae6fd); }
+    .header-aksam { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); }
+    .header-diger { background: linear-gradient(135deg, #f3f4f6, #e5e7eb); }
 
     .menu-date {
         font-weight: 800;
@@ -134,16 +129,6 @@
         gap: 0.5rem;
     }
 
-    .btn-action {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.75rem;
-        border-radius: 8px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-    }
-
     .status-indicator {
         font-size: 0.8rem;
         font-weight: 700;
@@ -151,15 +136,10 @@
         border-radius: 6px;
     }
 
-    .status-active {
-        background: #dcfce7;
-        color: #166534;
-    }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-passive { background: #fee2e2; color: #991b1b; }
 
-    .status-passive {
-        background: #fee2e2;
-        color: #991b1b;
-    }
+    .status-expired { background: #f1f5f9; color: #475569; }
 </style>
 
 @if (Model != null && Model.Any())
@@ -167,19 +147,15 @@
     <div class="menu-card-grid">
         @foreach (var group in Model)
         {
-           
-            string headerClass = group.MealType == "Sabah" ?
-                                 "header-sabah" :
-                                 group.MealType == "Öğle" ?
-                                 "header-ogle" : "header-aksam";
+            string headerClass = group.MealType == "Sabah" ? "header-sabah" :
+                                  group.MealType == "Öğle" ? "header-ogle" :
+                                  group.MealType == "Akşam" ? "header-aksam" : "header-diger";
 
             bool isPast = group.Date < DateTime.Today;
             bool hasAnySelection = group.Items.Any(i => i.HasAnySelection);
-
-           
             bool isGroupActive = group.Items.First().IsActive;
+            bool isExpired = isPast && isGroupActive;
 
-        
             var categoryGroups = group.Items
                 .GroupBy(m => foodCategoryNames != null && foodCategoryNames.ContainsKey(m.FoodID) ? foodCategoryNames[m.FoodID] : "Kategorisiz")
                 .OrderBy(g => g.Key)
@@ -207,7 +183,6 @@
                             {
                                 string foodName = foodNames != null && foodNames.ContainsKey(item.FoodID) ? foodNames[item.FoodID] : "Bilinmeyen Yemek";
                                 string tagClass = item.HasAnySelection ? "locked" : "";
-
                                 if (!item.IsActive) { tagClass += " inactive"; }
 
                                 <div class="food-pill @tagClass">
@@ -224,24 +199,36 @@
 
                 <div class="menu-card-footer">
                     <div>
-                        <span class="status-indicator @(isGroupActive ? "status-active" : "status-passive")">
-                            <i class="fa-solid @(isGroupActive ? "fa-circle-check" : "fa-circle-xmark") me-1"></i>
-                            @(isGroupActive ? "Aktif" : "Pasif")
-                        </span>
+                        @if (isExpired)
+                        {
+                            <span class="status-indicator status-expired">
+                                <i class="fa-regular fa-clock me-1"></i> Süre Doldu
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="status-indicator @(isGroupActive ? "status-active" : "status-passive")">
+                                <i class="fa-solid @(isGroupActive ? "fa-circle-check" : "fa-circle-xmark") me-1"></i>
+                                @(isGroupActive ? "Aktif" : "Pasif")
+                            </span>
+                        }
                     </div>
 
                     <div class="action-group">
                         @if (isPast)
                         {
-                            <button class="btn btn-outline-secondary btn-action" disabled title="Tarihi geçen menüler düzenlenemez">
-                                <i class="fa-solid fa-pen"></i> Düzenle
+                            
+                            <button class="btn btn-outline-secondary btn-row-action" disabled title="Tarihi geçen menüler düzenlenemez">
+                                <i class="fa-solid fa-pen"></i>
+                                <span class="btn-action-text">Düzenle</span>
                             </button>
                         }
                         else
                         {
                             <a href="@Url.Action("EditMenu", "Menu", new { date = group.Date.ToString("yyyy-MM-dd"), mealType = group.MealType })"
-                               class="btn btn-outline-primary btn-action btn-edit-ajax" data-title="Menü Düzenle">
-                                <i class="fa-solid fa-pen"></i> Düzenle
+                               class="btn btn-outline-primary btn-row-action btn-edit-ajax" data-title="Menü Düzenle" title="Düzenle">
+                                <i class="fa-solid fa-pen"></i>
+                                <span class="btn-action-text">Düzenle</span>
                             </a>
                         }
 
@@ -250,8 +237,9 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="date" value="@group.Date.ToString("yyyy-MM-dd")" />
                             <input type="hidden" name="mealType" value="@group.MealType" />
-                            <button type="button" class="btn btn-outline-warning btn-action btn-toggle-status" title="Durumu Değiştir">
+                            <button type="button" class="btn btn-outline-primary btn-row-action btn-toggle-status" title="Durumu Değiştir">
                                 <i class="fa-solid fa-power-off"></i>
+                                <span class="btn-action-text">Durumu Değiştir</span>
                             </button>
                         }
 
@@ -260,8 +248,9 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="date" value="@group.Date.ToString("yyyy-MM-dd")" />
                             <input type="hidden" name="mealType" value="@group.MealType" />
-                            <button type="button" class="btn btn-outline-danger btn-action btn-delete-menu" title="Tamamen Sil">
+                            <button type="button" class="btn btn-outline-primary btn-row-action btn-delete-menu" title="Tamamen Sil">
                                 <i class="fa-solid fa-trash"></i>
+                                <span class="btn-action-text">Sil</span>
                             </button>
                         }
                     </div>
@@ -272,11 +261,37 @@
 }
 else
 {
-    <div class="text-center py-5">
+  
+    <div class="empty-state-block text-center py-5">
         <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
             <i class="fa-solid fa-utensils fs-1 text-muted opacity-50"></i>
         </div>
-        <h5 class="fw-bold text-dark">Kayıt Bulunamadı</h5>
-        <p class="text-muted">Arama kriterlerinize uygun veya planlanmış bir menü bulunmamaktadır.</p>
+        @if (!hasMealTypes)
+        {
+            <h5 class="fw-bold text-dark">Henüz öğün tanımlanmamış</h5>
+            <p class="text-muted mb-3">Menü planlayabilmek için önce en az bir öğün eklemelisiniz.</p>
+            <button type="button" class="btn btn-primary btn-empty-add"
+                    data-url="@Url.Action("AddMeal", "Meal")" data-title="Yeni Öğün Ekle">
+                <i class="fa-solid fa-plus me-2"></i>Eklenecek yerler
+            </button>
+        }
+        else if (!hasFoodsGlobal)
+        {
+            <h5 class="fw-bold text-dark">Yemek kataloğunuz boş</h5>
+            <p class="text-muted mb-3">Menü planlamadan önce yemek eklemelisiniz.</p>
+            <button type="button" class="btn btn-primary btn-empty-add"
+                    data-url="@Url.Action("AddFood", "Food")" data-title="Yeni Yemek Tanımla">
+                <i class="fa-solid fa-plus me-2"></i>Eklenecek yerler
+            </button>
+        }
+        else
+        {
+            <h5 class="fw-bold text-dark">Kayıt Bulunamadı</h5>
+            <p class="text-muted mb-3">Arama kriterlerinize uygun veya planlanmış bir menü bulunmamaktadır.</p>
+            <button type="button" class="btn btn-primary btn-empty-add"
+                    data-url="@Url.Action("AddMenu", "Menu")" data-title="Yeni Menü Planla">
+                <i class="fa-solid fa-plus me-2"></i>Eklenecek yerler
+            </button>
+        }
     </div>
 }

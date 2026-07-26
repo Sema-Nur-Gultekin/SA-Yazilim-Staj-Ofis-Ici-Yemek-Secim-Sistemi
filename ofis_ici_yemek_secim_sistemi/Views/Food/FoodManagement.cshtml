@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.Food>
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.Food>
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewBag.Title = "Yemek Kataloğu";
@@ -10,18 +10,23 @@
         <h3 class="fw-bold text-dark m-0">Yemek Kataloğu</h3>
         <p class="text-muted small m-0">Menülere atanabilecek tüm yemeklerin listesi.</p>
     </div>
-    <a href="@Url.Action("AddFood", "Food")"
-       class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
-       data-title="Yeni Yemek Tanımla"
-       style="border-radius:8px;">
-        <i class="fa-solid fa-plus me-2"></i>Yeni Yemek Tanımla
-    </a>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-print" onclick="printPage()" title="Listeyi yazdır">
+            <i class="fa-solid fa-print"></i> Yazdır
+        </button>
+        <a href="@Url.Action("AddFood", "Food")"
+           class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
+           data-title="Yeni Yemek Tanımla"
+           style="border-radius:8px;">
+            <i class="fa-solid fa-plus me-2"></i>Yeni Yemek Tanımla
+        </a>
+    </div>
 </div>
+
 
 <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
     <div class="card-body py-3">
         <div class="row g-3 align-items-end">
-           
             <div class="col-md-5">
                 <label class="form-label fw-semibold small">Arama</label>
                 <div class="input-group">
@@ -34,7 +39,6 @@
                 </div>
             </div>
 
-        
             <div class="col-md-4">
                 <label class="form-label fw-semibold small">Kategoriye Göre</label>
                 <select id="categoryFilter" class="form-select py-2" style="border-radius:8px;">
@@ -60,30 +64,46 @@
 @section scripts {
     <script>
         $(function () {
-      
-            function applyFilters() {
+           
+            initDataTable('#foodTable', { paging: false, lengthChange: false, info: false });
+
+            var currentPage = 1;
+
+            function applyFilters(page) {
+                if (typeof page === 'number') {
+                    currentPage = page;
+                }
                 var search = $('#searchInput').val();
                 var categoryId = $('#categoryFilter').val();
 
                 $.get('@Url.Action("FoodManagement", "Food")', {
                     search: search,
-                    categoryId: categoryId || null
+                    categoryId: categoryId || null,
+                    page: currentPage
                 }, function (html) {
                     $('#tableContainer').html(html);
+                    initDataTable('#foodTable', { paging: false, lengthChange: false, info: false });
                 });
             }
 
-          
             var searchTimer;
             $('#searchInput').on('keyup', function () {
                 clearTimeout(searchTimer);
-                searchTimer = setTimeout(applyFilters, 400);
+                searchTimer = setTimeout(function () { applyFilters(1); }, 400); 
             });
 
-          
-            $('#categoryFilter').on('change', applyFilters);
+            $('#categoryFilter').on('change', function () { applyFilters(1); }); 
 
-            
+           
+            $(document).on('click', '#foodPagination a.page-link', function (e) {
+                e.preventDefault();
+                var li = $(this).closest('li');
+                if (li.hasClass('disabled') || li.hasClass('active')) return;
+                var page = parseInt($(this).data('page'), 10);
+                if (!page || page < 1) return;
+                applyFilters(page);
+            });
+
             $(document).on('click', '.btn-delete-food', function (e) {
                 e.preventDefault();
                 var form = $(this).closest('form');
@@ -107,7 +127,7 @@
                             success: function (response) {
                                 if (response.success) {
                                     toastr.success(response.message);
-                                    applyFilters(); 
+                                    applyFilters();
                                 } else {
                                     toastr.error(response.message);
                                 }
@@ -120,12 +140,11 @@
                 });
             });
 
-          
             $(document).on('click', '.btn-toggle-status', function (e) {
                 e.preventDefault();
                 var form = $(this).closest('form');
-                var currentStatus = $(this).find('.badge').text().trim();
-                var newStatus = currentStatus === 'Aktif' ? 'pasif' : 'aktif';
+                var isActive = $(this).data('active') === true || $(this).data('active') === 'true';
+                var newStatus = isActive ? 'pasif' : 'aktif';
 
                 Swal.fire({
                     title: 'Durumu Değiştir',
@@ -145,7 +164,7 @@
                             success: function (response) {
                                 if (response.success) {
                                     toastr.success(response.message);
-                                    applyFilters(); 
+                                    applyFilters();
                                 } else {
                                     toastr.error(response.message);
                                 }

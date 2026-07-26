@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.User>
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.User>
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewBag.Title = "Kullanıcı Yönetimi";
@@ -9,12 +9,17 @@
         <h3 class="fw-bold text-dark m-0">Şirket Kullanıcıları</h3>
         <p class="text-muted small m-0">Firmanıza kayıtlı tüm personel ve yönetici hesaplarını görüntüleyin.</p>
     </div>
-    <a href="@Url.Action("AddUser", "User")"
-       class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
-       data-title="Yeni Kullanıcı Ekle"
-       style="border-radius:8px;">
-        <i class="fa-solid fa-user-plus me-2"></i>Yeni Kullanıcı Ekle
-    </a>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-print" onclick="printPage()" title="Listeyi yazdır">
+            <i class="fa-solid fa-print"></i> Yazdır
+        </button>
+        <a href="@Url.Action("AddUser", "User")"
+           class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
+           data-title="Yeni Kullanıcı Ekle"
+           style="border-radius:8px;">
+            <i class="fa-solid fa-user-plus me-2"></i>Yeni Kullanıcı Ekle
+        </a>
+    </div>
 </div>
 
 
@@ -43,7 +48,8 @@
 @section scripts {
     <script>
         $(function () {
-         
+            initDataTable('#userTable');
+
             var searchTimer;
             $('#searchInput').on('keyup', function () {
                 clearTimeout(searchTimer);
@@ -51,11 +57,11 @@
                 searchTimer = setTimeout(function () {
                     $.get('@Url.Action("UserManagement", "User")', { search: term }, function (html) {
                         $('#tableContainer').html(html);
+                        initDataTable('#userTable');
                     });
                 }, 400);
             });
 
-          
             $(document).on('click', '.btn-delete-user', function (e) {
                 e.preventDefault();
                 var form = $(this).closest('form');
@@ -63,7 +69,7 @@
 
                 Swal.fire({
                     title: 'Emin misiniz?',
-                    text: "'" + userName + "' adlı kullanıcıyı kalıcı olarak silmek istediğinize emin misiniz?",
+                    text: "'" + userName + "' adlı kullanıcıyı silmek (pasife almak) istediğinize emin misiniz?",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#ef4444',
@@ -79,10 +85,10 @@
                             success: function (response) {
                                 if (response.success) {
                                     toastr.success(response.message);
-                                  
                                     var term = $('#searchInput').val();
                                     $.get('@Url.Action("UserManagement", "User")', { search: term }, function (html) {
                                         $('#tableContainer').html(html);
+                                        initDataTable('#userTable');
                                     });
                                 } else {
                                     toastr.error(response.message);
@@ -90,6 +96,47 @@
                             },
                             error: function () {
                                 toastr.error('Silme işlemi sırasında hata oluştu.');
+                            }
+                        });
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-toggle-status', function (e) {
+                e.preventDefault();
+                var form = $(this).closest('form');
+                var isActive = $(this).data('active') === true || $(this).data('active') === 'true';
+                var newStatus = isActive ? 'pasif' : 'aktif';
+
+                Swal.fire({
+                    title: 'Durumu Değiştir',
+                    text: "Bu kullanıcıyı " + newStatus + " hale getirmek istediğinize emin misiniz?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3b82f6',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Evet, Değiştir',
+                    cancelButtonText: 'Vazgeç'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: form.attr('action'),
+                            type: 'POST',
+                            data: form.serialize(),
+                            success: function (response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    var term = $('#searchInput').val();
+                                    $.get('@Url.Action("UserManagement", "User")', { search: term }, function (html) {
+                                        $('#tableContainer').html(html);
+                                        initDataTable('#userTable');
+                                    });
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function () {
+                                toastr.error('Durum değiştirilirken hata oluştu.');
                             }
                         });
                     }

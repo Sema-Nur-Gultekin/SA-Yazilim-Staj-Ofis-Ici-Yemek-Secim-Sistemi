@@ -1,36 +1,74 @@
-﻿@{
+@{
     var categories = ViewBag.Categories as List<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>;
     var foods = ViewBag.Foods as List<ofis_ici_yemek_secim_sistemi.Models.Food>;
+    var mealTypes = ViewBag.MealTypes as List<ofis_ici_yemek_secim_sistemi.Models.MealType>;
     bool hasFoods = ViewBag.HasFoods == true;
+    bool hasMealTypes = ViewBag.HasMealTypes == true;
 }
 
-@if (!hasFoods)
+@if (!hasMealTypes)
 {
-    <div class="alert alert-warning rounded-4 shadow-sm">Yemek kataloğunuz boş. Önce <a href="@Url.Action("AddFood","Food")" class="fw-bold text-dark">yemek ekleyin</a>.</div>
+   
+    <div class="empty-state-block text-center py-4">
+        <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 70px; height: 70px;">
+            <i class="fa-solid fa-mug-hot fs-1 text-muted opacity-50"></i>
+        </div>
+        <h5 class="fw-bold text-dark">Henüz öğün tanımlanmamış</h5>
+        <p class="text-muted mb-3">Menü planlayabilmek için önce en az bir öğün eklemelisiniz.</p>
+        <button type="button" class="btn btn-primary btn-empty-add"
+                data-url="@Url.Action("AddMeal", "Meal")" data-title="Yeni Öğün Ekle">
+            <i class="fa-solid fa-plus me-2"></i>Eklenecek yerler
+        </button>
+    </div>
+}
+else if (!hasFoods)
+{
+    <div class="empty-state-block text-center py-4">
+        <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 70px; height: 70px;">
+            <i class="fa-solid fa-bowl-food fs-1 text-muted opacity-50"></i>
+        </div>
+        <h5 class="fw-bold text-dark">Yemek kataloğunuz boş</h5>
+        <p class="text-muted mb-3">Menüye ekleyebileceğiniz bir yemek bulunmuyor.</p>
+        <button type="button" class="btn btn-primary btn-empty-add"
+                data-url="@Url.Action("AddFood", "Food")" data-title="Yeni Yemek Tanımla">
+            <i class="fa-solid fa-plus me-2"></i>Eklenecek yerler
+        </button>
+    </div>
 }
 else if (categories == null || !categories.Any())
 {
-    <div class="alert alert-warning rounded-4 shadow-sm">Aktif kategoriniz yok. Önce <a href="@Url.Action("AddCategory","Category")" class="fw-bold text-dark">kategori ekleyin</a>.</div>
+    <div class="empty-state-block text-center py-4">
+        <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 70px; height: 70px;">
+            <i class="fa-solid fa-tags fs-1 text-muted opacity-50"></i>
+        </div>
+        <h5 class="fw-bold text-dark">Aktif kategoriniz yok</h5>
+        <p class="text-muted mb-3">Menüye eklemeden önce en az bir kategori oluşturmalısınız.</p>
+        <button type="button" class="btn btn-primary btn-empty-add"
+                data-url="@Url.Action("AddCategory", "Category")" data-title="Yeni Kategori Ekle">
+            <i class="fa-solid fa-plus me-2"></i>Eklenecek yerler
+        </button>
+    </div>
 }
 else
 {
     <style>
-        .meal-type-radio-group {
+       
+        .meal-type-card-group {
             display: flex;
-            gap: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
             margin-top: 0.5rem;
         }
 
-        .meal-type-radio {
-            flex: 1;
-            text-align: center;
+        .meal-type-card {
+            flex: 1 1 140px;
         }
 
-            .meal-type-radio input {
+            .meal-type-card input {
                 display: none;
             }
 
-            .meal-type-radio label {
+            .meal-type-card label {
                 display: block;
                 padding: 0.75rem;
                 border: 2px solid #e2e8f0;
@@ -38,21 +76,30 @@ else
                 cursor: pointer;
                 font-weight: 600;
                 color: #64748b;
-                transition: all 0.2s ease;
+                text-align: center;
+                transition: all 0.25s ease;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+               
+                opacity: 1;
             }
 
-                .meal-type-radio label:hover {
+                .meal-type-card label:hover {
                     border-color: #93c5fd;
                     background: #f8fafc;
                 }
 
-            .meal-type-radio input:checked + label {
+            .meal-type-card input:checked + label {
                 border-color: #3b82f6;
                 background: #eff6ff;
                 color: #3b82f6;
                 box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
+                opacity: 1;
             }
+
+        .meal-type-card-group.has-selection .meal-type-card:not(.is-selected) label {
+            opacity: 0.45;
+            filter: grayscale(30%);
+        }
 
         .category-grid {
             display: grid;
@@ -105,7 +152,6 @@ else
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-       
             padding: 0;
             padding-bottom: 3px;
             line-height: 1;
@@ -136,11 +182,22 @@ else
             font-weight: 500;
             color: #334155;
             transition: background 0.2s;
+            gap: 0.5rem;
         }
 
             .selected-food-item:hover {
                 background: #f1f5f9;
             }
+
+       
+        .food-capacity-input {
+            width: 72px;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.4rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            text-align: center;
+        }
 
         .btn-remove-food {
             background: #fee2e2;
@@ -175,19 +232,17 @@ else
 
         <div class="mb-4">
             <label class="form-label fw-bold text-dark">Öğün</label>
-            <div class="meal-type-radio-group">
-                <div class="meal-type-radio">
-                    <input type="radio" name="MealType" value="Sabah" id="mealSabah" />
-                    <label for="mealSabah">Sabah</label>
-                </div>
-                <div class="meal-type-radio">
-                    <input type="radio" name="MealType" value="Öğle" id="mealOgle" checked />
-                    <label for="mealOgle">Öğle</label>
-                </div>
-                <div class="meal-type-radio">
-                    <input type="radio" name="MealType" value="Akşam" id="mealAksam" />
-                    <label for="mealAksam">Akşam</label>
-                </div>
+           
+            <div class="meal-type-card-group" id="mealTypeGroup">
+                @{ bool first = true; }
+                @foreach (var meal in mealTypes)
+                {
+                    <div class="meal-type-card" data-meal-name="@meal.Name">
+                        <input type="radio" name="MealType" value="@meal.Name" id="meal_@meal.ID" @(first ? "checked" : "") />
+                        <label for="meal_@meal.ID">@meal.Name</label>
+                    </div>
+                    first = false;
+                }
             </div>
         </div>
 
@@ -215,9 +270,25 @@ else
 
     <script>
         $(function () {
-            var allFoods = @Html.Raw(Json.Encode(foods.Select(f => new { id = f.ID, name = f.Name, categoryId = f.CategoryID ?? 0 })));
+            @{
+              
+                string allFoodsJson = Json.Encode(foods.Select(f => new { id = f.ID, name = f.Name, categoryId = f.CategoryID ?? 0 })).Replace("</", "<\\/");
+            }
+            var allFoods = @Html.Raw(allFoodsJson);
 
-        
+            
+            function refreshMealTypeFocus() {
+                var group = $('#mealTypeGroup');
+                var checkedName = group.find('input[name="MealType"]:checked').closest('.meal-type-card').data('meal-name');
+                group.addClass('has-selection');
+                group.find('.meal-type-card').each(function () {
+                    $(this).toggleClass('is-selected', $(this).data('meal-name') === checkedName);
+                });
+            }
+            refreshMealTypeFocus();
+            $(document).on('change', '#mealTypeGroup input[name="MealType"]', refreshMealTypeFocus);
+
+           
             $(document).on('click', '.btn-add-food', function () {
                 var catId = $(this).data('category-id');
                 var catName = $(this).data('category-name');
@@ -280,6 +351,7 @@ else
                         var list = $('.selected-food-list[data-category-id="' + catId + '"]');
                         list.append('<li class="selected-food-item shadow-sm" data-food-id="' + selectedFoodId + '">' +
                             '<span>' + selectedFoodName + '</span>' +
+                            '<input type="number" class="food-capacity-input" min="1" placeholder="Sınırsız" title="Kontenjan (opsiyonel, boş = sınırsız)" />' +
                             '<button type="button" class="btn-remove-food" title="Kaldır"><i class="fa-solid fa-xmark"></i></button>' +
                         '</li>');
                     }
@@ -290,20 +362,27 @@ else
                 $(this).closest('li').remove();
             });
 
-   
             $('#saveMenuBtn').click(function () {
                 var date = $('#menuDate').val();
                 var mealType = $('input[name="MealType"]:checked').val();
                 var foodIds = [];
+                var plannedPortions = [];
+                var hasInvalidCapacity = false;
                 $('.selected-food-list li').each(function () {
                     foodIds.push(parseInt($(this).data('food-id')));
+                    var capVal = $(this).find('.food-capacity-input').val();
+                    if (capVal === '' || capVal === null) {
+                        plannedPortions.push('');
+                    } else {
+                        var capNum = parseInt(capVal, 10);
+                        if (isNaN(capNum) || capNum <= 0) { hasInvalidCapacity = true; }
+                        plannedPortions.push(capNum);
+                    }
                 });
 
                 if (!date || !mealType) {
                     Swal.fire({
-                        title: 'Uyarı',
-                        text: 'Tarih ve öğün seçimi zorunludur.',
-                        icon: 'warning',
+                        title: 'Uyarı', text: 'Tarih ve öğün seçimi zorunludur.', icon: 'warning',
                         buttonsStyling: false,
                         customClass: { confirmButton: 'btn btn-warning text-dark px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
                     });
@@ -311,9 +390,15 @@ else
                 }
                 if (foodIds.length === 0) {
                     Swal.fire({
-                        title: 'Uyarı',
-                        text: 'En az bir yemek eklemelisiniz.',
-                        icon: 'warning',
+                        title: 'Uyarı', text: 'En az bir yemek eklemelisiniz.', icon: 'warning',
+                        buttonsStyling: false,
+                        customClass: { confirmButton: 'btn btn-warning text-dark px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
+                    });
+                    return;
+                }
+                if (hasInvalidCapacity) {
+                    Swal.fire({
+                        title: 'Uyarı', text: 'Kontenjan (porsiyon) sıfırdan büyük bir sayı olmalıdır.', icon: 'warning',
                         buttonsStyling: false,
                         customClass: { confirmButton: 'btn btn-warning text-dark px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
                     });
@@ -324,12 +409,7 @@ else
                 $.ajax({
                     url: '@Url.Action("AddMenu", "Menu")',
                     type: 'POST',
-                    data: {
-                        __RequestVerificationToken: token,
-                        Date: date,
-                        MealType: mealType,
-                        FoodIDs: foodIds
-                    },
+                    data: { __RequestVerificationToken: token, Date: date, MealType: mealType, FoodIDs: foodIds, PlannedPortions: plannedPortions },
                     success: function (response) {
                         if (response.success) {
                             AjaxModal.modal.hide();
@@ -337,9 +417,7 @@ else
                             AjaxModal.refreshTable();
                         } else {
                             Swal.fire({
-                                title: 'Hata',
-                                text: response.message,
-                                icon: 'error',
+                                title: 'Hata', text: response.message, icon: 'error',
                                 buttonsStyling: false,
                                 customClass: { confirmButton: 'btn btn-danger px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
                             });
@@ -347,9 +425,7 @@ else
                     },
                     error: function () {
                         Swal.fire({
-                            title: 'Hata',
-                            text: 'Sunucu ile bağlantı kurulamadı.',
-                            icon: 'error',
+                            title: 'Hata', text: 'Sunucu ile bağlantı kurulamadı.', icon: 'error',
                             buttonsStyling: false,
                             customClass: { confirmButton: 'btn btn-danger px-4 py-2 rounded-3 fw-semibold', popup: 'rounded-4 shadow-lg border-0' }
                         });

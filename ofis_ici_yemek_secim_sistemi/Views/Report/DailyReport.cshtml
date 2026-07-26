@@ -1,33 +1,49 @@
-﻿@{
+@{
     ViewBag.Title = "Gün Sonu Raporu";
-    DateTime reportDate = ViewBag.ReportDate != null ? (DateTime)ViewBag.ReportDate : DateTime.Today;
+    DateTime rangeFrom = ViewBag.DateFrom != null ? (DateTime)ViewBag.DateFrom : DateTime.Today;
+    DateTime rangeTo = ViewBag.DateTo != null ? (DateTime)ViewBag.DateTo : rangeFrom;
     string mealType = ViewBag.MealType as string ?? "";
     int? selectedCategoryId = ViewBag.SelectedCategoryId as int?;
     var reportData = ViewBag.ReportData as List<ofis_ici_yemek_secim_sistemi.Controllers.ReportRow>;
     var categories = ViewBag.Categories as List<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>;
+    var mealTypes = ViewBag.MealTypes as List<ofis_ici_yemek_secim_sistemi.Models.MealType>;
+    bool isSingleDay = ViewBag.IsSingleDay == true;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h3 class="fw-bold text-dark m-0">Gün Sonu Raporu</h3>
-        <p class="text-muted small m-0">Seçilen tarih ve öğüne göre yemek bazında toplam seçim sayılarını görüntüleyin.</p>
+        <p class="text-muted small m-0">Seçilen tarih aralığı ve öğüne göre yemek bazında toplam seçim sayılarını görüntüleyin.</p>
     </div>
+    <button type="button" class="btn btn-outline-secondary btn-print" onclick="printPage()" title="Raporu yazdır">
+        <i class="fa-solid fa-print"></i> Yazdır
+    </button>
 </div>
 
 <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
     <div class="card-body">
         <form method="get" action="@Url.Action("DailyReport", "Report")" class="row g-3 align-items-end">
+           
             <div class="col-auto">
-                <label class="form-label fw-semibold small">Tarih</label>
-                <input type="date" name="date" class="form-control" value="@reportDate.ToString("yyyy-MM-dd")" style="border-radius:8px;" />
+                <label class="form-label fw-semibold small">Başlangıç Tarihi</label>
+                <input type="date" name="dateFrom" class="form-control" value="@rangeFrom.ToString("yyyy-MM-dd")" style="border-radius:8px;" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label fw-semibold small">Bitiş Tarihi</label>
+                <input type="date" name="dateTo" class="form-control" value="@rangeTo.ToString("yyyy-MM-dd")" style="border-radius:8px;" />
             </div>
             <div class="col-auto">
                 <label class="form-label fw-semibold small">Öğün</label>
+                
                 <select name="mealType" class="form-select" style="border-radius:8px;">
                     <option value="">— Tümü —</option>
-                    <option value="Sabah" @(mealType == "Sabah" ? "selected" : "")>Sabah</option>
-                    <option value="Öğle" @(mealType == "Öğle" ? "selected" : "")>Öğle</option>
-                    <option value="Akşam" @(mealType == "Akşam" ? "selected" : "")>Akşam</option>
+                    @if (mealTypes != null)
+                    {
+                        foreach (var meal in mealTypes)
+                        {
+                            <option value="@meal.Name" @(mealType == meal.Name ? "selected" : "")>@meal.Name</option>
+                        }
+                    }
                 </select>
             </div>
             <div class="col-auto">
@@ -44,13 +60,14 @@
                 </select>
             </div>
             <div class="col-auto">
-                <button type="submit" class="btn btn-primary fw-semibold" style="border-radius:8px;">
-                    <i class="fa-solid fa-magnifying-glass me-1"></i> Getir
+               
+                <button type="submit" class="btn btn-primary fw-semibold btn-action" style="border-radius:8px;">
+                    <i class="fa-solid fa-filter me-1"></i> Filtrele
                 </button>
             </div>
             <div class="col-auto ms-auto">
-                <a href="@Url.Action("ExportDailyReport", "Report", new { date = reportDate.ToString("yyyy-MM-dd"), mealType = mealType, categoryId = selectedCategoryId })"
-                   class="btn btn-success fw-semibold" style="border-radius:8px;">
+                <a href="@Url.Action("ExportDailyReport", "Report", new { dateFrom = rangeFrom.ToString("yyyy-MM-dd"), dateTo = rangeTo.ToString("yyyy-MM-dd"), mealType = mealType, categoryId = selectedCategoryId })"
+                   class="btn btn-success fw-semibold btn-action" style="border-radius:8px;">
                     <i class="fa-solid fa-file-excel me-1"></i> Excel Olarak İndir
                 </a>
             </div>
@@ -60,21 +77,29 @@
 
 <div class="card shadow-sm border-0" style="border-radius:12px;">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="padding:1rem 1.5rem;">Kategori</th>
-                    <th>Yemek Adı</th>
-                    <th>Öğün</th>
-                    <th>Seçim Sayısı</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (reportData != null && reportData.Any())
-                {
-                    foreach (var item in reportData)
+        @if (reportData != null && reportData.Any())
+        {
+            <table id="dailyReportTable" class="table table-hover align-middle mb-0 table-datatable" style="width:100%;">
+                <thead class="table-light">
+                    <tr>
+                        @if (!isSingleDay)
+                        {
+                            <th style="padding:1rem 1.5rem;">Tarih</th>
+                        }
+                        <th style="padding:1rem 1.5rem;">Kategori</th>
+                        <th>Yemek Adı</th>
+                        <th>Öğün</th>
+                        <th>Seçim Sayısı</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in reportData)
                     {
                         <tr>
+                            @if (!isSingleDay)
+                            {
+                                <td style="padding:1rem 1.5rem;">@item.Date.ToString("dd.MM.yyyy")</td>
+                            }
                             <td style="padding:1rem 1.5rem;">@item.Category</td>
                             <td class="fw-semibold text-dark">@item.FoodName</td>
                             <td>
@@ -89,25 +114,37 @@
                             </td>
                         </tr>
                     }
+                </tbody>
+                <tfoot>
                     <tr class="table-light fw-bold">
-                        <td colspan="3" class="text-end" style="padding:1rem 1.5rem;">Toplam Seçim:</td>
+                        <td colspan="@(isSingleDay ? 3 : 4)" class="text-end" style="padding:1rem 1.5rem;">Toplam Seçim:</td>
                         <td>
                             <span class="badge bg-primary text-white px-2 py-1" style="border-radius:6px;">
                                 @reportData.Sum(r => r.SelectionCount)
                             </span>
                         </td>
                     </tr>
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="4" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-chart-bar d-block fs-1 mb-2 text-black-50"></i>
-                            Bu tarih ve öğünde herhangi bir seçim bulunmamaktadır.
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                </tfoot>
+            </table>
+        }
+        else
+        {
+          
+            <div class="empty-state-block text-center py-5">
+                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
+                    <i class="fa-solid fa-chart-bar fs-1 text-muted opacity-50"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Kayıt Bulunamadı</h5>
+                <p class="text-muted">Bu tarih aralığı ve filtrelerde herhangi bir seçim bulunmamaktadır.</p>
+            </div>
+        }
     </div>
 </div>
+
+@section scripts {
+    <script>
+        $(function () {
+            initDataTable('#dailyReportTable');
+        });
+    </script>
+}

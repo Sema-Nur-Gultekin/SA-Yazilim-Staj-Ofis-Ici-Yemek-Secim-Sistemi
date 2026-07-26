@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Web.Mvc;
 using ofis_ici_yemek_secim_sistemi.Models;
 using ofis_ici_yemek_secim_sistemi.Data;
+using ofis_ici_yemek_secim_sistemi.Services;
 using System.Web.Security;
 using System.IO;
 
@@ -36,15 +37,29 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
 
             if (existingUser != null)
             {
-                existingUser.Name = updatedUser.Name;
-                existingUser.Department = updatedUser.Department;
-                existingUser.Location = updatedUser.Location;
+                if (string.IsNullOrWhiteSpace(updatedUser.Name))
+                {
+                    ViewBag.ErrorMessage = "Ad Soyad boş bırakılamaz.";
+                    return View(existingUser);
+                }
+
+                if (!string.IsNullOrEmpty(newPassword) && newPassword.Length < 6)
+                {
+                    ViewBag.ErrorMessage = "Yeni şifreniz en az 6 karakter olmalıdır.";
+                    return View(existingUser);
+                }
+
+                
+                existingUser.Name = updatedUser.Name.Trim();
+                existingUser.Department = string.IsNullOrWhiteSpace(updatedUser.Department) ? null : updatedUser.Department.Trim();
+                existingUser.Location = string.IsNullOrWhiteSpace(updatedUser.Location) ? null : updatedUser.Location.Trim();
 
                 if (!string.IsNullOrEmpty(newPassword))
                 {
                     existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
                 }
 
+                ActivityLogger.Log(_context, existingUser.CompanyID, existingUser.ID, "Profil Bilgileri Güncellendi", existingUser.ID);
                 _context.SaveChanges();
 
                 Session["FullName"] = existingUser.Name;
@@ -65,7 +80,9 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
 
             if (user != null)
             {
-                _context.Users.Remove(user);
+                
+                user.IsActive = false;
+                ActivityLogger.Log(_context, user.CompanyID, user.ID, "Kullanıcı Kendi Hesabını Sildi (Pasife Alındı)", user.ID);
                 _context.SaveChanges();
 
                 FormsAuthentication.SignOut();
@@ -76,7 +93,6 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             return RedirectToAction("UserSettings");
         }
 
-        /*
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public ActionResult CompanySettings()
@@ -107,11 +123,21 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
 
                 if (existingCompany != null)
                 {
-                    existingCompany.Name = updatedCompany.Name;
-                    existingCompany.Address = updatedCompany.Address;
-                    existingCompany.ContactEmail = updatedCompany.ContactEmail;
-                    existingCompany.ContactPhone = updatedCompany.ContactPhone;
-                    existingCompany.TaxNumber = updatedCompany.TaxNumber;
+                    if (string.IsNullOrWhiteSpace(updatedCompany.Name))
+                    {
+                        ViewBag.ErrorMessage = "Şirket unvanı boş bırakılamaz.";
+                        return View(existingCompany);
+                    }
+
+                    
+                    existingCompany.Name = updatedCompany.Name.Trim();
+                    existingCompany.TaxNumber = string.IsNullOrWhiteSpace(updatedCompany.TaxNumber) ? null : updatedCompany.TaxNumber.Trim();
+                    existingCompany.ContactEmail = string.IsNullOrWhiteSpace(updatedCompany.ContactEmail) ? null : updatedCompany.ContactEmail.Trim();
+                    existingCompany.ContactPhone = string.IsNullOrWhiteSpace(updatedCompany.ContactPhone) ? null : updatedCompany.ContactPhone.Trim();
+                    existingCompany.Address = string.IsNullOrWhiteSpace(updatedCompany.Address) ? null : updatedCompany.Address.Trim();
+
+                   
+                    ActivityLogger.Log(_context, existingCompany.ID, user.ID, "Şirket Ayarları Güncellendi", existingCompany.ID);
 
                     _context.SaveChanges();
                     ViewBag.SuccessMessage = "Şirket bilgileri başarıyla güncellendi.";
@@ -122,7 +148,6 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
 
             return RedirectToAction("Index", "Home");
         }
-        */
 
         protected override void Dispose(bool disposing)
         {

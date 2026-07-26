@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.RecipeIngredient>
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.RecipeIngredient>
 @{
     var foodNames = ViewBag.FoodNames as Dictionary<int, string>;
     var stockNames = ViewBag.StockNames as Dictionary<int, string>;
@@ -6,14 +6,14 @@
 
 <div class="card shadow-sm border-0" style="border-radius:12px;">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table id="recipeTable" class="table table-hover align-middle mb-0 table-datatable" style="width:100%;">
             <thead class="table-light">
                 <tr>
                     <th style="padding:1rem 1.5rem;">Yemek</th>
                     <th>Malzeme</th>
                     <th>Miktar</th>
                     <th>Birim</th>
-                    <th style="min-width:120px;">İşlemler</th>
+                    <th style="min-width:100px;">İşlemler</th>
                 </tr>
             </thead>
             <tbody>
@@ -31,17 +31,21 @@
                             <td>
                                 <div class="d-flex gap-2">
                                     <a href="@Url.Action("EditRecipe", "Recipe", new { id = item.ID })"
-                                       class="btn btn-sm btn-outline-primary btn-edit-ajax"
+                                       class="btn btn-outline-primary btn-row-action btn-edit-ajax"
                                        data-title="Reçete Düzenle"
                                        title="Düzenle">
                                         <i class="fa-solid fa-pen-to-square"></i>
+                                        <span class="btn-action-text">Düzenle</span>
                                     </a>
                                     @using (Html.BeginForm("DeleteRecipe", "Recipe", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
                                     {
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Sil"
-                                                onclick="return confirm('Bu reçete kaydını silmek istediğinize emin misiniz?')">
+                                        <button type="button"
+                                                class="btn btn-outline-primary btn-row-action btn-delete-recipe"
+                                                data-name="@(foodNames != null && foodNames.ContainsKey(item.FoodID) ? foodNames[item.FoodID] : "bu yemek")"
+                                                title="Sil">
                                             <i class="fa-solid fa-trash"></i>
+                                            <span class="btn-action-text">Sil</span>
                                         </button>
                                     }
                                 </div>

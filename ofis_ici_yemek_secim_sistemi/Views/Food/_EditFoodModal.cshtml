@@ -3,12 +3,28 @@
     var cats = ViewBag.Categories as List<ofis_ici_yemek_secim_sistemi.Models.FoodCategory>;
 }
 
-<form action="@Url.Action("EditFood", "Food", new { id = Model.ID })" method="post">
+<form action="@Url.Action("EditFood", "Food", new { id = Model.ID })" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
 
     <div class="mb-3">
         <label class="form-label fw-semibold">Yemek Adı <span class="text-danger">*</span></label>
         <input type="text" name="Name" class="form-control py-2" value="@Model.Name" required maxlength="150" style="border-radius:8px;" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Yemek Görseli</label>
+        @if (!string.IsNullOrWhiteSpace(Model.ImagePath))
+        {
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <img src="@Url.Content(Model.ImagePath)" alt="@Model.Name" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;" />
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="RemoveImage" value="true" id="removeImageCheck" />
+                    <label class="form-check-label small text-danger" for="removeImageCheck">Görseli kaldır</label>
+                </div>
+            </div>
+        }
+        <input type="file" name="Image" accept=".jpg,.jpeg,.png,.webp" class="form-control py-2" style="border-radius:8px;" />
+        <div class="form-text">JPG, PNG veya WEBP — en fazla 5 MB. Yeni dosya seçerseniz eski görselin yerine geçer.</div>
     </div>
 
     <div class="mb-3">

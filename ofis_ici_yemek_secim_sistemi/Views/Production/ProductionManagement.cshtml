@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.ProductionRecord>
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.ProductionRecord>
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewBag.Title = "Üretim / Pişirim Kayıtları";
@@ -8,16 +8,86 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h3 class="fw-bold text-dark m-0">Üretim / Pişirim Kayıtları</h3>
-        <p class="text-muted small m-0">Planlanan ve gerçekleşen üretim adetlerini takip edin.</p>
+        <p class="text-muted small m-0">Planlanan ve gerçekleşen üretim adetlerini takip edin. Üretim kaydedildiğinde ilgili reçeteye göre stok otomatik düşer.</p>
     </div>
-    <a href="@Url.Action("AddProduction", "Production")"
-       class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
-       data-title="Yeni Üretim Kaydı"
-       style="border-radius:8px;">
-        <i class="fa-solid fa-plus me-2"></i>Yeni Kayıt Ekle
-    </a>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-print no-print" onclick="printPage()" title="Listeyi yazdır">
+            <i class="fa-solid fa-print"></i> Yazdır
+        </button>
+        <a href="@Url.Action("AddProduction", "Production")"
+           class="btn btn-primary fw-semibold px-4 py-2 btn-add-ajax"
+           data-title="Yeni Üretim Kaydı"
+           style="border-radius:8px;">
+            <i class="fa-solid fa-plus me-2"></i>Yeni Kayıt Ekle
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
+    <div class="card-body py-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold small">Arama</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white" style="border-radius:8px 0 0 8px;">
+                        <i class="fa-solid fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="productionSearchInput" class="form-control py-2"
+                           placeholder="Yemek adı veya öğün..." style="border-radius:0 8px 8px 0;">
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="tableContainer" data-refresh-url="@Url.Action("ProductionManagement", "Production")">
     @Html.Partial("_ProductionList", Model)
 </div>
+
+@section scripts {
+    <script>
+        $(function () {
+            initDataTable('#productionTable');
+
+            $('#productionSearchInput').on('keyup', function () {
+                $('#productionTable').DataTable().search($(this).val()).draw();
+            });
+
+            $(document).on('click', '.btn-delete-production', function (e) {
+                e.preventDefault();
+                var form = $(this).closest('form');
+                var name = $(this).data('name');
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "'" + name + "' üretim kaydını silmek istediğinize emin misiniz? Bu kayda ait düşürülmüş stok otomatik olarak iade edilecektir.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'Vazgeç'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: form.attr('action'),
+                            type: 'POST',
+                            data: form.serialize(),
+                            success: function (response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    AjaxModal.refreshTable();
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function () {
+                                toastr.error('Silme işlemi sırasında hata oluştu.');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

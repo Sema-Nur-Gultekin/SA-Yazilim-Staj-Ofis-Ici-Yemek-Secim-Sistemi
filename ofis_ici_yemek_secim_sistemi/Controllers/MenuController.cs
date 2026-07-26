@@ -1,4 +1,5 @@
-﻿using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Models;
+using ofis_ici_yemek_secim_sistemi.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,19 +13,74 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
         public override ActionResult Index() => null;
 
 
-        public ActionResult MenuManagement(DateTime? date = null, string mealType = "", string search = "")
+        private List<MealType> GetActiveMealTypes(int companyId)
+        {
+            return _context.MealTypes
+                .Where(m => m.CompanyID == companyId && m.IsActive)
+                .OrderBy(m => m.DisplayOrder.HasValue ? 0 : 1)
+                .ThenBy(m => m.DisplayOrder)
+                .ToList();
+        }
+
+
+        public ActionResult WeeklyMenu(DateTime? weekOf = null)
+        {
+            int companyId = GetCurrentUserCompanyId();
+
+            DateTime refDate = (weekOf ?? DateTime.Today).Date;
+            int diff = (7 + (refDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+            DateTime monday = refDate.AddDays(-diff);
+   
+            DateTime sunday = monday.AddDays(6);
+
+            var menuItems = _context.MenuItems
+                .Where(m => m.CompanyID == companyId && m.Date >= monday && m.Date <= sunday)
+                .OrderBy(m => m.Date)
+                .ThenBy(m => m.MealType)
+                .ToList();
+
+            var foodIds = menuItems.Select(m => m.FoodID).Distinct().ToList();
+            var foodsDict = _context.Foods
+                .Where(f => foodIds.Contains(f.ID))
+                .ToDictionary(f => f.ID, f => f.Name);
+            var foodImagesDict = _context.Foods
+                .Where(f => foodIds.Contains(f.ID) && f.ImagePath != null)
+                .ToDictionary(f => f.ID, f => f.ImagePath);
+
+            var mealOrderMap = _context.MealTypes
+                .Where(m => m.CompanyID == companyId)
+                .ToDictionary(m => m.Name, m => m.DisplayOrder ?? int.MaxValue - 1);
+
+            ViewBag.FoodNames = foodsDict;
+            ViewBag.FoodImages = foodImagesDict;
+            ViewBag.MealOrderMap = mealOrderMap;
+            ViewBag.WeekStart = monday;
+            ViewBag.WeekEnd = sunday;
+            ViewBag.PrevWeek = monday.AddDays(-7).ToString("yyyy-MM-dd");
+            ViewBag.NextWeek = monday.AddDays(7).ToString("yyyy-MM-dd");
+            ViewBag.Today = DateTime.Today;
+
+            return View(menuItems);
+        }
+
+        public ActionResult MenuManagement(DateTime? dateFrom = null, DateTime? dateTo = null, string mealType = "", string search = "")
         {
             int companyId = GetCurrentUserCompanyId();
 
             var menus = _context.MenuItems
                 .Where(m => m.CompanyID == companyId);
 
-            if (date.HasValue)
+        
+            if (dateFrom.HasValue)
             {
-                menus = menus.Where(m => m.Date == date.Value);
+                menus = menus.Where(m => m.Date >= dateFrom.Value);
+            }
+            if (dateTo.HasValue)
+            {
+                menus = menus.Where(m => m.Date <= dateTo.Value);
             }
 
-       
+          
             if (!string.IsNullOrWhiteSpace(mealType))
             {
                 menus = menus.Where(m => m.MealType == mealType);
@@ -32,7 +88,7 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
 
             var menuList = menus.OrderByDescending(m => m.Date).ToList();
 
-     
+          
             var foodIds = menuList.Select(m => m.FoodID).Distinct().ToList();
             var relatedFoods = _context.Foods
                 .Where(f => foodIds.Contains(f.ID))
@@ -54,14 +110,19 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                     ? categoryNames[f.CategoryID.Value]
                     : "—");
 
-     
+         
             ViewBag.FoodNames = foodNames;
             ViewBag.FoodCategoryNames = foodCategoryNames;
 
+            var mealOrderMap = _context.MealTypes
+                .Where(m => m.CompanyID == companyId)
+                .ToDictionary(m => m.Name, m => m.DisplayOrder ?? int.MaxValue - 1);
+
+           
             var groupedMenus = menuList
                 .GroupBy(m => new { m.Date, m.MealType })
                 .OrderByDescending(g => g.Key.Date)
-                .ThenBy(g => g.Key.MealType)
+                .ThenBy(g => mealOrderMap.ContainsKey(g.Key.MealType) ? mealOrderMap[g.Key.MealType] : int.MaxValue)
                 .Select(g => new MenuGroupViewModel
                 {
                     Date = g.Key.Date,
@@ -83,7 +144,7 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                     }).ToList()
                 }).ToList();
 
-         
+           
             if (!string.IsNullOrWhiteSpace(search))
             {
                 string term = search.Trim().ToLower();
@@ -93,34 +154,52 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             }
 
             ViewBag.GroupedMenus = groupedMenus;
+            ViewBag.MealTypes = GetActiveMealTypes(companyId);
+            ViewBag.HasFoodsGlobal = _context.Foods.Any(f => f.CompanyID == companyId && f.IsActive);
+            ViewBag.HasMealTypes = ViewBag.MealTypes is List<MealType> mt && mt.Any();
 
             if (Request.IsAjaxRequest())
             {
                 return PartialView("_MenuList", groupedMenus);
             }
 
-            ViewBag.Date = date;
+            ViewBag.DateFrom = dateFrom;
+            ViewBag.DateTo = dateTo;
             ViewBag.MealType = mealType;
             ViewBag.Search = search;
 
             return View(groupedMenus);
         }
 
-
+    
         private void LoadMenuFormLookups(int companyId)
         {
-            ViewBag.Categories = _context.FoodCategories
+           
+            var activeCategories = _context.FoodCategories
                 .Where(c => c.CompanyID == companyId && c.IsActive)
-                .OrderBy(c => c.DisplayOrder)
+                .OrderBy(c => c.DisplayOrder.HasValue ? 0 : 1)
+                .ThenBy(c => c.DisplayOrder)
                 .ToList();
 
+            ViewBag.Categories = activeCategories;
+
+            var activeCategoryIds = activeCategories.Select(c => c.ID).ToList();
+
+   
             var foods = _context.Foods
-                .Where(f => f.CompanyID == companyId && f.IsActive)
+                .Where(f => f.CompanyID == companyId
+                            && f.IsActive
+                            && (!f.CategoryID.HasValue || activeCategoryIds.Contains(f.CategoryID.Value)))
                 .OrderBy(f => f.Name)
                 .ToList();
 
             ViewBag.Foods = foods;
             ViewBag.HasFoods = foods.Any();
+
+           
+            var mealTypes = GetActiveMealTypes(companyId);
+            ViewBag.MealTypes = mealTypes;
+            ViewBag.HasMealTypes = mealTypes.Any();
         }
 
         [HttpGet]
@@ -134,7 +213,7 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult AddMenu(DateTime Date, string MealType, int[] FoodIDs)
+        public ActionResult AddMenu(DateTime Date, string MealType, int[] FoodIDs, int?[] PlannedPortions)
         {
             int companyId = GetCurrentUserCompanyId();
 
@@ -143,6 +222,13 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = "En az bir yemek seçmelisiniz." });
             }
 
+           
+            if (PlannedPortions != null && PlannedPortions.Any(p => p.HasValue && p.Value <= 0))
+            {
+                return Json(new { success = false, message = "Kontenjan (planlanan porsiyon) sıfırdan büyük bir sayı olmalıdır." });
+            }
+
+            
             var existingFoodIds = _context.MenuItems
                 .Where(m => m.CompanyID == companyId && m.Date == Date && m.MealType == MealType)
                 .Select(m => m.FoodID)
@@ -158,30 +244,37 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 return Json(new { success = false, message = "Şu yemekler zaten bu öğünde mevcut: " + string.Join(", ", duplicateNames) });
             }
 
-            foreach (var foodId in FoodIDs)
+            for (int i = 0; i < FoodIDs.Length; i++)
             {
+             
+                int? plannedPortion = (PlannedPortions != null && i < PlannedPortions.Length) ? PlannedPortions[i] : null;
+
                 var menuItem = new MenuItem
                 {
                     CompanyID = companyId,
                     Date = Date,
                     MealType = MealType,
-                    FoodID = foodId,
+                    FoodID = FoodIDs[i],
+                    PlannedPortion = plannedPortion,
                     IsActive = true
                 };
                 _context.MenuItems.Add(menuItem);
             }
 
             _context.SaveChanges();
+
+            ActivityLogger.LogAndSave(_context, companyId, GetCurrentUserId(), $"Menü Eklendi ({Date:yyyy-MM-dd} {MealType})");
+
             return Json(new { success = true, message = "Menü başarıyla eklendi." });
         }
 
-     
+  
         [HttpGet]
         public ActionResult EditMenu(DateTime date, string mealType)
         {
             int companyId = GetCurrentUserCompanyId();
 
-          
+           
             if (date.Date < DateTime.Today)
             {
                 return Content("<div class='alert alert-warning'>Geçmiş tarihli menüler düzenlenemez.</div>");
@@ -196,6 +289,7 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
 
             LoadMenuFormLookups(companyId);
 
+           
             var menuItemIds = existingItems.Select(mi => mi.ID).ToList();
             var selectedMenuItemIds = _context.Selections
                 .Where(s => menuItemIds.Contains(s.MenuItemID))
@@ -229,7 +323,8 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                         CategoryName = catName,
                         IsActive = mi.IsActive,
                         HasAnySelection = selectedMenuItemIds.Contains(mi.ID),
-                        IsLocked = lockedFoodIds.Contains(mi.FoodID) && selectedMenuItemIds.Contains(mi.ID)
+                        IsLocked = lockedFoodIds.Contains(mi.FoodID) && selectedMenuItemIds.Contains(mi.ID),
+                        PlannedPortion = mi.PlannedPortion
                     };
                 }).ToList(),
                 LockedFoodIds = lockedFoodIds
@@ -238,17 +333,23 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             return PartialView("_EditMenuModal", model);
         }
 
-      
+     
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult EditMenu(DateTime Date, string MealType, int[] FoodIDs)
+        public ActionResult EditMenu(DateTime Date, string MealType, int[] FoodIDs, int?[] PlannedPortions)
         {
             int companyId = GetCurrentUserCompanyId();
 
-            
+          
             if (Date.Date < DateTime.Today)
             {
                 return Json(new { success = false, message = "Geçmiş tarihli menüler düzenlenemez." });
+            }
+
+            
+            if (PlannedPortions != null && PlannedPortions.Any(p => p.HasValue && p.Value <= 0))
+            {
+                return Json(new { success = false, message = "Kontenjan (planlanan porsiyon) sıfırdan büyük bir sayı olmalıdır." });
             }
 
            
@@ -256,7 +357,6 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 .Where(m => m.CompanyID == companyId && m.Date == Date && m.MealType == MealType)
                 .ToList();
 
-           
             var existingIds = existingItems.Select(mi => mi.ID).ToList();
             var selectedMenuItemIds = _context.Selections
                 .Where(s => existingIds.Contains(s.MenuItemID))
@@ -267,7 +367,6 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             var lockedItems = existingItems.Where(mi => selectedMenuItemIds.Contains(mi.ID)).ToList();
             var lockedFoodIds = lockedItems.Select(mi => mi.FoodID).Distinct().ToList();
 
-           
             if (lockedFoodIds.Any())
             {
                 var missingLocked = lockedFoodIds.Except(FoodIDs).ToList();
@@ -279,6 +378,13 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             }
 
            
+            var portionMap = new System.Collections.Generic.Dictionary<int, int?>();
+            for (int i = 0; i < FoodIDs.Length; i++)
+            {
+                int? portion = (PlannedPortions != null && i < PlannedPortions.Length) ? PlannedPortions[i] : null;
+                portionMap[FoodIDs[i]] = portion;
+            }
+
             var toRemove = existingItems
                 .Where(mi => !FoodIDs.Contains(mi.FoodID) && !lockedFoodIds.Contains(mi.FoodID))
                 .ToList();
@@ -289,6 +395,14 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             }
 
            
+            foreach (var item in existingItems.Except(toRemove))
+            {
+                if (portionMap.TryGetValue(item.FoodID, out int? updatedPortion))
+                {
+                    item.PlannedPortion = updatedPortion;
+                }
+            }
+
             var existingFoodIds = existingItems.Select(mi => mi.FoodID).ToList();
             var toAdd = FoodIDs.Where(fid => !existingFoodIds.Contains(fid)).ToList();
 
@@ -300,23 +414,24 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                     Date = Date,
                     MealType = MealType,
                     FoodID = foodId,
+                    PlannedPortion = portionMap.TryGetValue(foodId, out int? newPortion) ? newPortion : null,
                     IsActive = true
                 };
                 _context.MenuItems.Add(menuItem);
             }
 
             _context.SaveChanges();
+            ActivityLogger.LogAndSave(_context, companyId, GetCurrentUserId(), $"Menü Düzenlendi ({Date:yyyy-MM-dd} {MealType})");
             return Json(new { success = true, message = "Menü başarıyla güncellendi." });
         }
 
-    
+  
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult ToggleMenuStatus(DateTime date, string mealType)
         {
             int companyId = GetCurrentUserCompanyId();
 
-            
             var items = _context.MenuItems
                 .Where(m => m.CompanyID == companyId && m.Date == date && m.MealType == mealType)
                 .ToList();
@@ -335,10 +450,8 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
                 }
             }
 
-          
             bool newStatus = !items.First().IsActive;
 
-         
             foreach (var item in items)
             {
                 item.IsActive = newStatus;
@@ -347,10 +460,11 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             _context.SaveChanges();
 
             string status = newStatus ? "aktif" : "pasif";
+            ActivityLogger.LogAndSave(_context, companyId, GetCurrentUserId(), $"Menü {status} yapıldı ({date:yyyy-MM-dd} {mealType})");
             return Json(new { success = true, message = $"Menü {status} hale getirildi." });
         }
 
-  
+   
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteMenu(DateTime date, string mealType)
@@ -363,7 +477,6 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             if (!items.Any())
                 return Json(new { success = false, message = "Menü bulunamadı." });
 
-           
             if (date >= DateTime.Today)
             {
                 var itemIds = items.Select(i => i.ID).ToList();
@@ -377,10 +490,12 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             _context.MenuItems.RemoveRange(items);
             _context.SaveChanges();
 
+            ActivityLogger.LogAndSave(_context, companyId, GetCurrentUserId(), $"Menü Silindi ({date:yyyy-MM-dd} {mealType})");
+
             return Json(new { success = true, message = "Menü başarıyla silindi." });
         }
 
-   
+
         public class MenuGroupViewModel
         {
             public DateTime Date { get; set; }
@@ -397,6 +512,8 @@ namespace ofis_ici_yemek_secim_sistemi.Controllers
             public bool IsActive { get; set; }
             public bool HasAnySelection { get; set; }
             public bool IsLocked { get; set; }
+            
+            public int? PlannedPortion { get; set; }
         }
 
         public class EditMenuViewModel

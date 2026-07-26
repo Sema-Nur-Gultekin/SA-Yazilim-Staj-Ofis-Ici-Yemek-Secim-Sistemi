@@ -1,0 +1,83 @@
+@model IEnumerable<ofis_ici_yemek_secim_sistemi.Models.MealType>
+
+<div class="card shadow-sm border-0" style="border-radius:12px;">
+    <div class="table-responsive">
+        @if (Model != null && Model.Any())
+        {
+            <table id="mealTable" class="table table-hover align-middle mb-0 table-datatable" style="width:100%;">
+                <thead class="table-light">
+                    <tr>
+                        <th style="padding:1rem 1.5rem; width:80px;">Sıra</th>
+                        <th>Öğün Adı</th>
+                        <th>Durum</th>
+                        <th style="min-width:150px;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr class="@(!item.IsActive ? "table-secondary opacity-75" : "")">
+                            <td style="padding:1rem 1.5rem;" class="text-muted fw-bold">
+                                @(item.DisplayOrder.HasValue ? item.DisplayOrder.Value.ToString() : "—")
+                            </td>
+                            <td class="fw-semibold text-dark">@item.Name</td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="border-radius:6px;">Aktif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="border-radius:6px;">Pasif</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="@Url.Action("EditMeal", "Meal", new { id = item.ID })"
+                                       class="btn btn-outline-primary btn-row-action btn-edit-ajax" data-title="Öğün Düzenle" title="Düzenle">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                        <span class="btn-action-text">Düzenle</span>
+                                    </a>
+                                    @using (Html.BeginForm("ToggleMealStatus", "Meal", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="button"
+                                                class="btn btn-outline-primary btn-row-action btn-toggle-status"
+                                                data-active="@item.IsActive.ToString().ToLower()"
+                                                title="@(item.IsActive ? "Pasife Al" : "Aktif Et")">
+                                            <i class="fa-solid fa-power-off"></i>
+                                            <span class="btn-action-text">@(item.IsActive ? "Pasife Al" : "Aktif Et")</span>
+                                        </button>
+                                    }
+                                    @using (Html.BeginForm("DeleteMeal", "Meal", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="btn btn-outline-primary btn-row-action btn-delete-meal" data-name="@item.Name" title="Sil">
+                                            <i class="fa-solid fa-trash"></i>
+                                            <span class="btn-action-text">Sil</span>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+           
+            <div class="empty-state-block text-center py-5">
+                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
+                    <i class="fa-solid fa-utensils fs-1 text-muted opacity-50"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Henüz öğün tanımlanmamış</h5>
+                <p class="text-muted mb-3">Menü planlayabilmek için önce en az bir öğün eklemelisiniz.</p>
+                <button type="button" class="btn btn-primary btn-empty-add"
+                        data-url="@Url.Action("AddMeal", "Meal")" data-title="Yeni Öğün Ekle">
+                    <i class="fa-solid fa-plus me-2"></i>Eklenecek yerler
+                </button>
+            </div>
+        }
+    </div>
+</div>

@@ -31,6 +31,10 @@ namespace ofis_ici_yemek_secim_sistemi.Models
         [MaxLength(500)]
         public string Description { get; set; }
 
+
+        [MaxLength(300)]
+        public string ImagePath { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
